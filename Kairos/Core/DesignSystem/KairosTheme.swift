@@ -1,0 +1,135 @@
+import SwiftUI
+
+// MARK: - KairosTheme
+
+enum KairosTheme {
+
+    // MARK: - Colors
+
+    enum Colors {
+        static let background      = Color(hex: "#0A0A0F")
+        static let surface         = Color(hex: "#13131A")
+        static let surfaceElevated = Color(hex: "#1C1C28")
+        static let border          = Color(hex: "#252535")
+        static let borderSubtle    = Color(hex: "#1C1C28")
+
+        static let textPrimary   = Color.white
+        static let textSecondary = Color(hex: "#8888AA")
+        static let textMuted     = Color(hex: "#55556A")
+
+        static let accent       = Color(hex: "#A8A8FF")
+        static let accentSubtle = Color(hex: "#A8A8FF").opacity(0.12)
+
+        static func status(_ s: KRStatus) -> Color {
+            switch s {
+            case .notStarted:  return Color(hex: "#3A3A4A")
+            case .initialized: return Color(hex: "#5A5A7A")
+            case .inProgress:  return Color(hex: "#4A7AA8")
+            case .done:        return Color(hex: "#4A9A6A")
+            case .blocked:     return Color(hex: "#9A4A4A")
+            case .paused:      return Color(hex: "#7A7A4A")
+            }
+        }
+
+        static func domain(_ name: String) -> Color {
+            switch name.lowercased() {
+            case "health":        return Color(hex: "#4A9A6A")
+            case "work":          return Color(hex: "#4A7AA8")
+            case "spirit":        return Color(hex: "#9A6AAA")
+            case "sport":         return Color(hex: "#AA7A4A")
+            case "kids":          return Color(hex: "#AA9A4A")
+            case "love":          return Color(hex: "#AA4A6A")
+            case "externalities": return Color(hex: "#6A8AAA")
+            default:              return Color(hex: "#6A6A8A")
+            }
+        }
+    }
+
+    // MARK: - Typography
+
+    enum Typography {
+        static let displayLarge  = Font.system(size: 32, weight: .bold,     design: .default)
+        static let displayMedium = Font.system(size: 22, weight: .semibold, design: .default)
+        static let headline      = Font.system(size: 15, weight: .semibold, design: .default)
+        static let body          = Font.system(size: 13, weight: .regular,  design: .default)
+        static let caption       = Font.system(size: 11, weight: .regular,  design: .default)
+        static let monoLarge     = Font.system(size: 22, weight: .medium,   design: .monospaced)
+        static let mono          = Font.system(size: 13, weight: .regular,  design: .monospaced)
+        static let monoSmall     = Font.system(size: 10, weight: .regular,  design: .monospaced)
+        static let label         = Font.system(size: 10, weight: .medium,   design: .default)
+    }
+
+    // MARK: - Spacing
+
+    enum Spacing {
+        static let xs:  CGFloat = 4
+        static let sm:  CGFloat = 8
+        static let md:  CGFloat = 16
+        static let lg:  CGFloat = 24
+        static let xl:  CGFloat = 32
+        static let xxl: CGFloat = 48
+    }
+
+    // MARK: - Radius
+
+    enum Radius {
+        static let sm: CGFloat = 4
+        static let md: CGFloat = 8
+        static let lg: CGFloat = 12
+    }
+}
+
+// MARK: - Color Hex Init
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3:  (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:  (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:  (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default: (a, r, g, b) = (255, 255, 255, 255)
+        }
+        self.init(.sRGB,
+                  red:     Double(r) / 255,
+                  green:   Double(g) / 255,
+                  blue:    Double(b) / 255,
+                  opacity: Double(a) / 255)
+    }
+}
+
+// MARK: - Reusable Components
+
+struct KairosLabel: View {
+    let text: String
+    var body: some View {
+        Text(text.uppercased())
+            .font(KairosTheme.Typography.label)
+            .foregroundStyle(KairosTheme.Colors.textMuted)
+            .tracking(1.5)
+    }
+}
+
+struct StatusPill: View {
+    let status: KRStatus
+    var body: some View {
+        Text(status.displayName)
+            .font(KairosTheme.Typography.monoSmall)
+            .foregroundStyle(KairosTheme.Colors.status(status))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(KairosTheme.Colors.status(status).opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+    }
+}
+
+struct KairosDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(KairosTheme.Colors.border)
+            .frame(height: 1)
+    }
+}
