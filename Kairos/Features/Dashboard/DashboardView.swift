@@ -2,9 +2,35 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+// MARK: - Custom drag types
+
+extension UTType {
+    /// In-app domain-card reorder
+    static let kairosDomainDrop = UTType(exportedAs: "com.damianspendel.kairos.domain-drop")
+    /// In-app KR move between domains
+    static let kairosKRDrop = UTType(exportedAs: "com.damianspendel.kairos.kr-drop")
+}
+
+struct DomainDrop: Codable, Transferable {
+    let domainName: String
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .kairosDomainDrop)
+    }
+}
+
+struct KRDrop: Codable, Transferable {
+    let krID: String  // UUID string of the KairosKeyResult
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .kairosKRDrop)
+    }
+}
+
+// MARK: - DashboardView
+
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
+    @Query private var allKeyResults: [KairosKeyResult]
     @State private var selectedYear = 2026
 
     private var currentYear: KairosYear? { years.first { $0.year == selectedYear } }
@@ -69,7 +95,6 @@ struct DashboardView: View {
                 }
             }
             Spacer()
-            // Month indicator
             Text(monthLabel)
                 .font(KairosTheme.Typography.mono)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
@@ -105,7 +130,6 @@ struct DashboardView: View {
             }
             .frame(height: 3)
 
-            // KR status summary strip
             HStack(spacing: 2) {
                 let krs = year.allKeyResults
                 ForEach(KRStatus.allCases, id: \.self) { status in
@@ -156,17 +180,48 @@ struct DashboardView: View {
     private func domainGrid(for year: KairosYear) -> some View {
         LazyVGrid(columns: columns, spacing: KairosTheme.Spacing.md) {
             ForEach(year.sortedDomains) { domain in
-                DomainCard(domain: domain, onSwap: { sourceName, targetName in
-                    guard
-                        let src = year.sortedDomains.first(where: { $0.name == sourceName }),
-                        let tgt = year.sortedDomains.first(where: { $0.name == targetName })
-                    else { return }
-                    let tmp = src.sortOrder
-                    src.sortOrder = tgt.sortOrder
-                    tgt.sortOrder = tmp
-                })
+                DomainCard(
+                    domain: domain,
+                    onSwap: { sourceName, targetName in
+                        guard
+                            let src = year.sortedDomains.first(where: { $0.name == sourceName }),
+                            let tgt = year.sortedDomains.first(where: { $0.name == targetName })
+                        else { return }
+                        let tmp = src.sortOrder
+                        src.sortOrder = tgt.sortOrder
+                        tgt.sortOrder = tmp
+                    },
+                    onReceiveKR: { krID in
+                        moveKR(id: krID, toDomain: domain)
+                    }
+                )
             }
         }
+    }
+
+    // MARK: - Move KR between domains
+
+    private func moveKR(id krID: String, toDomain target: KairosDomain) {
+        guard
+            let uuid = UUID(uuidString: krID),
+            let kr = allKeyResults.first(where: { $0.id == uuid }),
+            kr.objective?.domain?.id != target.id
+        else { return }
+
+        // Find or create an objective in the target domain
+        let targetObj: KairosObjective
+        if let existing = target.sortedObjectives.first {
+            targetObj = existing
+        } else {
+            let newObj = KairosObjective(
+                title: kr.objective?.title ?? "General",
+                sortOrder: 0
+            )
+            modelContext.insert(newObj)
+            target.objectives.append(newObj)
+            targetObj = newObj
+        }
+        kr.objective = targetObj
     }
 
     // MARK: - Empty State
@@ -185,7 +240,8 @@ struct DashboardView: View {
 
 struct DomainCard: View {
     let domain: KairosDomain
-    let onSwap: (String, String) -> Void  // (sourceName, targetName)
+    let onSwap: (String, String) -> Void
+    let onReceiveKR: (String) -> Void
     @State private var isHovered = false
     @State private var isDropTarget = false
 
@@ -211,12 +267,10 @@ struct DomainCard: View {
                     .foregroundStyle(domainColor)
             }
 
-            // KR status dots
             krDots
 
             Spacer(minLength: 0)
 
-            // Progress bar + count
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
@@ -235,7 +289,6 @@ struct DomainCard: View {
                         .font(KairosTheme.Typography.monoSmall)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                     Spacer()
-                    // Latest notable commentary snippet
                     if let note = latestNote {
                         Text(note)
                             .font(KairosTheme.Typography.monoSmall)
@@ -262,8 +315,8 @@ struct DomainCard: View {
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .animation(.easeInOut(duration: 0.12), value: isDropTarget)
         .onHover { isHovered = $0 }
+        // Domain card reorder — drag this card
         .draggable(DomainDrop(domainName: domain.name)) {
-            // Drag preview
             HStack(spacing: 6) {
                 Text(domain.emoji)
                 Text(domain.name.uppercased())
@@ -275,16 +328,27 @@ struct DomainCard: View {
             .background(KairosTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
         }
+        // Accept domain card reorder drops
         .dropDestination(for: DomainDrop.self) { items, _ in
             guard let sourceName = items.first?.domainName,
                   sourceName != domain.name
             else { return false }
             onSwap(sourceName, domain.name)
             return true
-        } isTargeted: { isDropTarget = $0 }
+        } isTargeted: { targeted in
+            isDropTarget = targeted
+        }
+        // Accept KR drops from DomainDetailView
+        .dropDestination(for: KRDrop.self) { items, _ in
+            guard let krID = items.first?.krID else { return false }
+            onReceiveKR(krID)
+            return true
+        } isTargeted: { targeted in
+            if targeted { isDropTarget = true }
+            else if !targeted { isDropTarget = false }
+        }
     }
 
-    // KR dots arranged in rows of 6
     private var krDots: some View {
         let chunked = allKRs.chunked(into: 7)
         return VStack(alignment: .leading, spacing: 3) {
@@ -305,19 +369,6 @@ struct DomainCard: View {
             .compactMap { $0.latestCommentary.isEmpty ? nil : $0.latestCommentary }
             .first
             .map { String($0.prefix(40)) + ($0.count > 40 ? "…" : "") }
-    }
-}
-
-// MARK: - Drag Transfer Type
-
-struct DomainDrop: Transferable {
-    let domainName: String
-
-    static var transferRepresentation: some TransferRepresentation {
-        ProxyRepresentation(
-            exporting: { $0.domainName },
-            importing: { DomainDrop(domainName: $0) }
-        )
     }
 }
 

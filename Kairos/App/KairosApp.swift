@@ -86,7 +86,9 @@ enum KairosRoute: Hashable {
 
 struct KairosSidebar: View {
     @Binding var selection: KairosRoute
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
+    @Query private var allKeyResults: [KairosKeyResult]
 
     private var current2026: KairosYear? { years.first { $0.year == 2026 } }
 
@@ -130,7 +132,6 @@ struct KairosSidebar: View {
                             Text(domain.name)
                                 .foregroundStyle(KairosTheme.Colors.textPrimary)
                             Spacer()
-                            // Mini progress arc
                             ZStack {
                                 Circle()
                                     .stroke(KairosTheme.Colors.border, lineWidth: 2)
@@ -142,6 +143,11 @@ struct KairosSidebar: View {
                             .frame(width: 16, height: 16)
                         }
                         .tag(KairosRoute.domain(domain.name))
+                        .dropDestination(for: KRDrop.self) { items, _ in
+                            guard let krID = items.first?.krID else { return false }
+                            moveKR(id: krID, toDomain: domain)
+                            return true
+                        }
                     }
                 }
                 .listRowBackground(Color.clear)
@@ -158,5 +164,29 @@ struct KairosSidebar: View {
         .scrollContentBackground(.hidden)
         .background(KairosTheme.Colors.surface)
         .foregroundStyle(KairosTheme.Colors.textSecondary)
+    }
+
+    // MARK: - Move a KR into another domain's first objective
+
+    private func moveKR(id krID: String, toDomain target: KairosDomain) {
+        guard
+            let uuid = UUID(uuidString: krID),
+            let kr = allKeyResults.first(where: { $0.id == uuid }),
+            kr.objective?.domain?.id != target.id
+        else { return }
+
+        let targetObj: KairosObjective
+        if let existing = target.sortedObjectives.first {
+            targetObj = existing
+        } else {
+            let newObj = KairosObjective(
+                title: kr.objective?.title ?? "General",
+                sortOrder: 0
+            )
+            modelContext.insert(newObj)
+            target.objectives.append(newObj)
+            targetObj = newObj
+        }
+        kr.objective = targetObj
     }
 }

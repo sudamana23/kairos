@@ -162,7 +162,16 @@ struct KeyResultRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: KairosTheme.Spacing.md) {
-            // Status indicator bar
+            // Drag handle / status bar — grab here to move to another domain
+            VStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 0.5)
+                        .fill(KairosTheme.Colors.textMuted.opacity(0.4))
+                        .frame(width: 3, height: 3)
+                }
+            }
+            .padding(.top, 6)
+
             RoundedRectangle(cornerRadius: 1)
                 .fill(KairosTheme.Colors.status(kr.currentStatus))
                 .frame(width: 3)
@@ -188,12 +197,26 @@ struct KeyResultRow: View {
                         .lineLimit(3)
                 }
 
-                // Monthly history dots
                 monthlyHistory
             }
         }
         .padding(.horizontal, KairosTheme.Spacing.md)
         .padding(.vertical, KairosTheme.Spacing.sm)
+        .draggable(KRDrop(krID: kr.id.uuidString)) {
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(KairosTheme.Colors.status(kr.currentStatus))
+                    .frame(width: 3, height: 20)
+                Text(kr.title)
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+        }
     }
 
     private func ratingDots(_ rating: Int) -> some View {

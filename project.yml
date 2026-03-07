@@ -44,3 +44,12 @@ targets:
               - kairos
             CFBundleURLName: com.damianspendel.kairos
             CFBundleTypeRole: Viewer
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.damianspendel.kairos.domain-drop
+            UTTypeDescription: Kairos Domain Card
+            UTTypeConformsTo:
+              - public.data
+          - UTTypeIdentifier: com.damianspendel.kairos.kr-drop
+            UTTypeDescription: Kairos Key Result
+            UTTypeConformsTo:
+              - public.data

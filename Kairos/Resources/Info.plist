@@ -43,5 +43,28 @@
 	<string>Kairos uses the microphone for voice pulse check-ins and monthly review recordings.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Kairos Domain Card</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.damianspendel.kairos.domain-drop</string>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Kairos Key Result</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.damianspendel.kairos.kr-drop</string>
+		</dict>
+	</array>
 </dict>
 </plist>
