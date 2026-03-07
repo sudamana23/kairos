@@ -342,11 +342,13 @@ struct HealthPanel: View {
                     highlight: .neutral
                 )
                 MetricTile(
-                    label: "Resp Rate",
-                    value: snap.avgRespiratoryRate.map { String(format: "%.1f", $0) } ?? "—",
-                    unit: "br/min",
+                    label: snap.readinessScore != nil ? "Readiness" : "Resp Rate",
+                    value: snap.readinessScore.map { "\($0)" }
+                        ?? snap.avgRespiratoryRate.map { String(format: "%.1f", $0) }
+                        ?? "—",
+                    unit: snap.readinessScore != nil ? "/100" : "br/min",
                     trend: nil,
-                    highlight: .neutral
+                    highlight: readinessHighlight(snap.readinessScore)
                 )
             }
 
@@ -452,6 +454,13 @@ struct HealthPanel: View {
     // MARK: - Highlight logic
 
     enum Highlight { case good, warning, alert, neutral }
+
+    private func readinessHighlight(_ score: Int?) -> Highlight {
+        guard let v = score else { return .neutral }
+        if v >= 70 { return .good }
+        if v >= 50 { return .warning }
+        return .alert
+    }
 
     private func hrvHighlight(_ hrv: Double?) -> Highlight {
         guard let v = hrv else { return .neutral }

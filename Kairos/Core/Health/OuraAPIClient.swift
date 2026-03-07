@@ -63,23 +63,40 @@ struct OuraTokenResponse: Decodable {
 
 private struct OuraPaginated<T: Decodable>: Decodable { let data: [T] }
 
+// /v2/usercollection/sleep — detailed session data (raw metrics, durations)
+// Use this, NOT daily_sleep which only contains score/contributor percentages.
 private struct OuraSleepItem: Decodable {
     let day:                String
-    let totalSleepDuration: Int?
+    let type:               String  // "long_sleep" | "short_sleep" | "deleted"
+    let totalSleepDuration: Int?    // seconds
     let deepSleepDuration:  Int?
     let remSleepDuration:   Int?
-    let averageHrv:         Int?
-    let lowestHeartRate:    Int?
-    let averageBreath:      Double?
+    let averageHrv:         Int?    // RMSSD ms
+    let lowestHeartRate:    Int?    // resting HR
+    let averageBreath:      Double? // breaths/min
+
+    var isMainSleep: Bool { type == "long_sleep" }
 
     enum CodingKeys: String, CodingKey {
         case day
+        case type
         case totalSleepDuration = "total_sleep_duration"
         case deepSleepDuration  = "deep_sleep_duration"
         case remSleepDuration   = "rem_sleep_duration"
         case averageHrv         = "average_hrv"
         case lowestHeartRate    = "lowest_heart_rate"
         case averageBreath      = "average_breath"
+    }
+}
+
+// /v2/usercollection/daily_readiness — overall recovery score + HRV balance
+private struct OuraReadinessItem: Decodable {
+    let day:   String
+    let score: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case day
+        case score
     }
 }
 
@@ -154,13 +171,20 @@ struct OuraAPIClient {
         let s = ouraDateFmt.string(from: start)
         let e = ouraDateFmt.string(from: end)
 
-        async let sleepTask:    [OuraSleepItem]    = get("daily_sleep",    start: s, end: e)
-        async let activityTask: [OuraActivityItem] = get("daily_activity", start: s, end: e)
-        async let vo2Task:      [OuraVo2MaxItem]   = safeGet("vo2_max",    start: s, end: e)
+        // Use /sleep (raw sessions) not /daily_sleep (score summaries only).
+        // safeGet for optional endpoints so one failure doesn't block the rest.
+        async let sleepTask:     [OuraSleepItem]      = get("sleep",             start: s, end: e)
+        async let activityTask:  [OuraActivityItem]   = get("daily_activity",    start: s, end: e)
+        async let readinessTask: [OuraReadinessItem]  = safeGet("daily_readiness", start: s, end: e)
+        async let vo2Task:       [OuraVo2MaxItem]     = safeGet("vo2_max",       start: s, end: e)
 
-        let sleep    = try await sleepTask
+        let allSleep = try await sleepTask
         let activity = try await activityTask
-        let vo2      = await vo2Task
+        let readiness = await readinessTask
+        let vo2       = await vo2Task
+
+        // Only main sleep sessions (exclude naps, deleted entries)
+        let sleep = allSleep.filter { $0.isMainSleep }
 
         let hrvVals  = sleep.compactMap { $0.averageHrv.map(Double.init) }
         let avgHRV   = hrvVals.isEmpty  ? nil : hrvVals.reduce(0, +)  / Double(hrvVals.count)
@@ -171,8 +195,9 @@ struct OuraAPIClient {
         let respVals = sleep.compactMap { $0.averageBreath }
         let avgResp  = respVals.isEmpty ? nil : respVals.reduce(0, +) / Double(respVals.count)
 
-        let sorted   = sleep.sorted { $0.day > $1.day }
-        let last     = sorted.first
+        // Last night = most recent long_sleep entry
+        let sorted    = sleep.sorted { $0.day > $1.day }
+        let last      = sorted.first
         let lastTotal = last?.totalSleepDuration.map { Double($0) / 3600 }
         let lastDeep  = last?.deepSleepDuration.map  { Double($0) / 3600 }
         let lastREM   = last?.remSleepDuration.map   { Double($0) / 3600 }
@@ -186,7 +211,8 @@ struct OuraAPIClient {
         let calVals  = activity.compactMap { $0.activeCalories.map(Double.init) }
         let avgCals  = calVals.isEmpty  ? nil : calVals.reduce(0, +)  / Double(calVals.count)
 
-        let latestVo2 = vo2.sorted { $0.day > $1.day }.first?.vo2Max
+        let latestVo2       = vo2.sorted { $0.day > $1.day }.first?.vo2Max
+        let latestReadiness = readiness.sorted { $0.day > $1.day }.first?.score
 
         return HealthSnapshot(
             date:               end,
@@ -199,7 +225,8 @@ struct OuraAPIClient {
             avgSleepHours:      avgSleep,
             avgDailySteps:      avgSteps,
             avgActiveEnergy:    avgCals,
-            vo2Max:             latestVo2
+            vo2Max:             latestVo2,
+            readinessScore:     latestReadiness
         )
     }
 }

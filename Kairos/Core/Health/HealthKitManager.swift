@@ -26,12 +26,23 @@ struct HealthSnapshot: Sendable {
     // Fitness
     let vo2Max: Double?           // mL/kg/min — latest reading
 
+    // Readiness (Oura only — 0–100)
+    let readinessScore: Int?
+
     // Computed signals
     var recoverySignal: RecoverySignal {
-        guard let hrv = avgHRV else { return .unknown }
-        if hrv >= 50 { return .high }
-        if hrv >= 30 { return .moderate }
-        return .low
+        // Prefer HRV; fall back to Oura readiness score
+        if let hrv = avgHRV {
+            if hrv >= 50 { return .high }
+            if hrv >= 30 { return .moderate }
+            return .low
+        }
+        if let score = readinessScore {
+            if score >= 70 { return .high }
+            if score >= 50 { return .moderate }
+            return .low
+        }
+        return .unknown
     }
 
     var sleepSignal: SleepSignal {
@@ -179,7 +190,8 @@ final class HealthKitManager: ObservableObject {
             avgSleepHours: sleepResult.average,
             avgDailySteps: stepsVal,
             avgActiveEnergy: energyVal,
-            vo2Max: vo2Val
+            vo2Max: vo2Val,
+            readinessScore: nil
         )
     }
 
