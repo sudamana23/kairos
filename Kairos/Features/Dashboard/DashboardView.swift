@@ -1,7 +1,9 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @State private var selectedYear = 2026
 
@@ -154,7 +156,15 @@ struct DashboardView: View {
     private func domainGrid(for year: KairosYear) -> some View {
         LazyVGrid(columns: columns, spacing: KairosTheme.Spacing.md) {
             ForEach(year.sortedDomains) { domain in
-                DomainCard(domain: domain)
+                DomainCard(domain: domain, onSwap: { sourceName, targetName in
+                    guard
+                        let src = year.sortedDomains.first(where: { $0.name == sourceName }),
+                        let tgt = year.sortedDomains.first(where: { $0.name == targetName })
+                    else { return }
+                    let tmp = src.sortOrder
+                    src.sortOrder = tgt.sortOrder
+                    tgt.sortOrder = tmp
+                })
             }
         }
     }
@@ -175,7 +185,9 @@ struct DashboardView: View {
 
 struct DomainCard: View {
     let domain: KairosDomain
+    let onSwap: (String, String) -> Void  // (sourceName, targetName)
     @State private var isHovered = false
+    @State private var isDropTarget = false
 
     private var domainColor: Color { KairosTheme.Colors.domain(domain.name) }
     private var allKRs: [KairosKeyResult] { domain.allKeyResults }
@@ -240,10 +252,36 @@ struct DomainCard: View {
         .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
         .overlay(
             RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
-                .stroke(isHovered ? domainColor.opacity(0.4) : KairosTheme.Colors.border, lineWidth: 1)
+                .stroke(
+                    isDropTarget ? KairosTheme.Colors.accent :
+                    (isHovered ? domainColor.opacity(0.4) : KairosTheme.Colors.border),
+                    lineWidth: isDropTarget ? 2 : 1
+                )
         )
+        .scaleEffect(isDropTarget ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .animation(.easeInOut(duration: 0.12), value: isDropTarget)
         .onHover { isHovered = $0 }
+        .draggable(DomainDrop(domainName: domain.name)) {
+            // Drag preview
+            HStack(spacing: 6) {
+                Text(domain.emoji)
+                Text(domain.name.uppercased())
+                    .font(KairosTheme.Typography.monoSmall)
+                    .tracking(1.2)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+        }
+        .dropDestination(for: DomainDrop.self) { items, _ in
+            guard let sourceName = items.first?.domainName,
+                  sourceName != domain.name
+            else { return false }
+            onSwap(sourceName, domain.name)
+            return true
+        } isTargeted: { isDropTarget = $0 }
     }
 
     // KR dots arranged in rows of 6
@@ -267,6 +305,19 @@ struct DomainCard: View {
             .compactMap { $0.latestCommentary.isEmpty ? nil : $0.latestCommentary }
             .first
             .map { String($0.prefix(40)) + ($0.count > 40 ? "…" : "") }
+    }
+}
+
+// MARK: - Drag Transfer Type
+
+struct DomainDrop: Transferable {
+    let domainName: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(
+            exporting: { $0.domainName },
+            importing: { DomainDrop(domainName: $0) }
+        )
     }
 }
 
