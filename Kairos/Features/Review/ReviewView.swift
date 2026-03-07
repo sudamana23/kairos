@@ -220,7 +220,11 @@ struct ReviewView: View {
                     .padding(KairosTheme.Spacing.xl)
                 }
                 .onChange(of: transcript.count) { _, _ in
-                    withAnimation { proxy.scrollTo(transcript.last?.id ?? "streaming", anchor: .bottom) }
+                    withAnimation {
+                        if let lastId = transcript.last?.id {
+                            proxy.scrollTo(lastId, anchor: .bottom)
+                        }
+                    }
                 }
                 .onChange(of: streamingResponse) { _, _ in
                     proxy.scrollTo("streaming", anchor: .bottom)

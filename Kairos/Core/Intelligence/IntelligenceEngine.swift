@@ -187,12 +187,23 @@ final class IntelligenceManager: ObservableObject {
             .filter { !$0.isEmpty }
             .map { String($0) }
 
+        // Pull live snapshot from HealthKitManager if available
+        let hkSnap = HealthKitManager.shared.snapshot
+        let healthSnapshot: IntelligenceContext.HealthSnapshot? = hkSnap.map {
+            IntelligenceContext.HealthSnapshot(
+                avgHRV: $0.avgHRV,
+                avgSleepHours: $0.avgSleepHours,
+                avgRHR: $0.avgRHR,
+                vo2Max: $0.vo2Max
+            )
+        }
+
         return IntelligenceContext(
             year: year.year,
             month: month,
             domainSummaries: domainSummaries,
             recentPulseNotes: recentNotes,
-            healthSnapshot: nil  // TODO: populate from HealthKit
+            healthSnapshot: healthSnapshot
         )
     }
 }

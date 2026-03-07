@@ -19,6 +19,7 @@ struct DashboardView: View {
                 header
                 if let year = currentYear {
                     overallProgress(for: year)
+                    HealthPanel()
                     domainGrid(for: year)
                 } else {
                     emptyState
