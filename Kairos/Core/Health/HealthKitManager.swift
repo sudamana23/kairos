@@ -79,7 +79,10 @@ final class HealthKitManager: ObservableObject {
     @Published var authError: String?
 
     private init() {
-        isAvailable = HKHealthStore.isHealthDataAvailable()
+        let available = HKHealthStore.isHealthDataAvailable()
+        isAvailable = available
+        print("[Kairos] HKHealthStore.isHealthDataAvailable() = \(available)")
+        print("[Kairos] Running on: \(ProcessInfo.processInfo.operatingSystemVersionString)")
     }
 
     // MARK: - Read types

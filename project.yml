@@ -1,6 +1,6 @@
 name: Kairos
 options:
-  bundleIdPrefix: com.kairos
+  bundleIdPrefix: com.damianspendel
   createIntermediateGroups: true
   deploymentTarget:
     macOS: "14.0"
@@ -19,7 +19,7 @@ targets:
       - sdk: HealthKit.framework
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.kairos.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ENABLE_HARDENED_RUNTIME: YES
