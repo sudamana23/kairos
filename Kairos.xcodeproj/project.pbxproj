@@ -10,14 +10,17 @@
 		06609779676F65E29F09FEFF /* KairosModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45776E726307E4B00C81E4C3 /* KairosModels.swift */; };
 		297ED0DB3144A7638FC957EA /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65D197D93C962CA514EA3BD6 /* HealthKit.framework */; };
 		2EA344156E987BE049FABA72 /* HealthPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */; };
+		2EB77D17CE9743E226BCD191 /* OuraAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F875CD0A564212A6EF5DC2 /* OuraAPIClient.swift */; };
 		3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */; };
 		40307F763177F607660F7FFA /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9115EA9AF8705CF2A7B5A38 /* ReviewView.swift */; };
 		41069C99611769952ADA5462 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */; };
 		611068D42F6058A48B70C549 /* SeedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05BD95988659F3B1C387E9F /* SeedData.swift */; };
+		642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A76FE310D5F8F56EA21A7B6 /* Security.framework */; };
 		76F5F9D2E0AC7E233FE84F08 /* IntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */; };
 		7A593F55783067B82DB36BD7 /* PulseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1647A8684DE1BAF6C2747703 /* PulseView.swift */; };
 		B0C831A0B764CB84F550DA2B /* TimeMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53E427D97E690230DA11181 /* TimeMachineView.swift */; };
 		BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF341935C3B2CBC215BC7E16 /* KairosApp.swift */; };
+		C1029FBDD30D1605F932B43C /* OuraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25217559A2924CE96309241 /* OuraManager.swift */; };
 		C5E6222653F9228213982DB4 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89FBF929237810DD1FA8EBD /* HealthKitManager.swift */; };
 		E3C86BB8154D6AF0C549329B /* DomainDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A802C70405445110405CB258 /* DomainDetailView.swift */; };
 /* End PBXBuildFile section */
@@ -26,13 +29,16 @@
 		1647A8684DE1BAF6C2747703 /* PulseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseView.swift; sourceTree = "<group>"; };
 		2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPanel.swift; sourceTree = "<group>"; };
 		45776E726307E4B00C81E4C3 /* KairosModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosModels.swift; sourceTree = "<group>"; };
+		4A76FE310D5F8F56EA21A7B6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		65D197D93C962CA514EA3BD6 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		A53E427D97E690230DA11181 /* TimeMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeMachineView.swift; sourceTree = "<group>"; };
 		A802C70405445110405CB258 /* DomainDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainDetailView.swift; sourceTree = "<group>"; };
 		A8DC59B9CE15C341640F89ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A8F875CD0A564212A6EF5DC2 /* OuraAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraAPIClient.swift; sourceTree = "<group>"; };
 		B05BD95988659F3B1C387E9F /* SeedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedData.swift; sourceTree = "<group>"; };
 		B89FBF929237810DD1FA8EBD /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		C25217559A2924CE96309241 /* OuraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraManager.swift; sourceTree = "<group>"; };
 		C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosTheme.swift; sourceTree = "<group>"; };
 		E43372EFD253509C9CD5A7F7 /* Kairos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kairos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
@@ -47,6 +53,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				297ED0DB3144A7638FC957EA /* HealthKit.framework in Frameworks */,
+				642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				65D197D93C962CA514EA3BD6 /* HealthKit.framework */,
+				4A76FE310D5F8F56EA21A7B6 /* Security.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -94,6 +102,8 @@
 			isa = PBXGroup;
 			children = (
 				B89FBF929237810DD1FA8EBD /* HealthKitManager.swift */,
+				A8F875CD0A564212A6EF5DC2 /* OuraAPIClient.swift */,
+				C25217559A2924CE96309241 /* OuraManager.swift */,
 			);
 			path = Health;
 			sourceTree = "<group>";
@@ -248,6 +258,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 956BD75DB366E2AA30124BF1 /* Build configuration list for PBXProject "Kairos" */;
 			developmentRegion = en;
@@ -281,6 +293,8 @@
 				BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */,
 				06609779676F65E29F09FEFF /* KairosModels.swift in Sources */,
 				3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */,
+				2EB77D17CE9743E226BCD191 /* OuraAPIClient.swift in Sources */,
+				C1029FBDD30D1605F932B43C /* OuraManager.swift in Sources */,
 				7A593F55783067B82DB36BD7 /* PulseView.swift in Sources */,
 				40307F763177F607660F7FFA /* ReviewView.swift in Sources */,
 				611068D42F6058A48B70C549 /* SeedData.swift in Sources */,
@@ -359,10 +373,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Kairos/Resources/Kairos.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 8VTBP868VA;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -371,7 +382,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.damianspendel.kairos;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.9;
@@ -439,10 +449,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Kairos/Resources/Kairos.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 8VTBP868VA;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -451,7 +458,6 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.damianspendel.kairos;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.9;

@@ -187,8 +187,8 @@ final class IntelligenceManager: ObservableObject {
             .filter { !$0.isEmpty }
             .map { String($0) }
 
-        // Pull live snapshot from HealthKitManager if available
-        let hkSnap = HealthKitManager.shared.snapshot
+        // Prefer Oura API snapshot; fall back to HealthKit
+        let hkSnap = OuraManager.shared.snapshot ?? HealthKitManager.shared.snapshot
         let healthSnapshot: IntelligenceContext.HealthSnapshot? = hkSnap.map {
             IntelligenceContext.HealthSnapshot(
                 avgHRV: $0.avgHRV,

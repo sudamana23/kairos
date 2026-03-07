@@ -2,23 +2,35 @@ import SwiftUI
 import HealthKit
 
 // MARK: - HealthPanel
-// Embedded in the Dashboard. Shows a 7-day physiological snapshot from Oura via HealthKit.
+// Shows 7-day physiological snapshot.
+// Data priority: Oura API → Apple Health (HealthKit).
 
 struct HealthPanel: View {
-    @ObservedObject private var hk = HealthKitManager.shared
+    @ObservedObject private var oura = OuraManager.shared
+    @ObservedObject private var hk   = HealthKitManager.shared
+
+    @State private var showTokenEntry   = false
+    @State private var tokenDraft       = ""
+    @FocusState private var tokenFocus: Bool
+
+    // Prefer Oura; fall back to HealthKit
+    private var activeSnapshot: HealthSnapshot? { oura.snapshot ?? hk.snapshot }
+    private var panelTitle: String { oura.snapshot != nil ? "Oura · 7-Day Signal" : "Body · 7-Day Signal" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
             header
 
-            if !hk.isAvailable {
-                unavailableView
-            } else if !hk.isAuthorized {
-                authPrompt
-            } else if let snap = hk.snapshot {
+            if let snap = activeSnapshot {
                 metricsGrid(snap)
-            } else {
+            } else if oura.isAuthorized && oura.isFetching {
                 loadingView
+            } else if oura.isAuthorized, let err = oura.fetchError {
+                errorView(err)
+            } else if hk.isAuthorized && hk.snapshot == nil {
+                loadingView
+            } else {
+                connectionView
             }
         }
         .padding(KairosTheme.Spacing.md)
@@ -29,7 +41,9 @@ struct HealthPanel: View {
                 .stroke(KairosTheme.Colors.border, lineWidth: 1)
         )
         .task {
-            if hk.isAuthorized && hk.snapshot == nil {
+            if oura.isAuthorized && oura.snapshot == nil {
+                await oura.fetchCurrentSnapshot()
+            } else if hk.isAuthorized && hk.snapshot == nil {
                 await hk.fetchCurrentSnapshot()
             }
         }
@@ -39,20 +53,32 @@ struct HealthPanel: View {
 
     private var header: some View {
         HStack {
-            KairosLabel(text: "Body · 7-Day Signal")
+            KairosLabel(text: panelTitle)
             Spacer()
-            if let snap = hk.snapshot {
+            if let snap = activeSnapshot {
                 recoveryBadge(snap.recoverySignal)
             }
-            if hk.isAuthorized {
+            if oura.isAuthorized || hk.isAuthorized {
                 Button {
-                    Task { await hk.fetchCurrentSnapshot() }
+                    Task {
+                        if oura.isAuthorized { await oura.fetchCurrentSnapshot() }
+                        else { await hk.fetchCurrentSnapshot() }
+                    }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.caption)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
                 .buttonStyle(.plain)
+            }
+            if oura.isAuthorized {
+                Button { oura.revoke() } label: {
+                    Image(systemName: "xmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                .buttonStyle(.plain)
+                .help("Disconnect Oura")
             }
         }
     }
@@ -70,6 +96,154 @@ struct HealthPanel: View {
         .padding(.vertical, 3)
         .background(Color(hex: signal.color).opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+    }
+
+    // MARK: - Connection view
+
+    private var connectionView: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            if showTokenEntry {
+                tokenEntryView
+            } else {
+                ouraConnectRow
+                if hk.isAvailable && !hk.isAuthorized {
+                    KairosDivider()
+                    healthKitConnectRow
+                }
+            }
+        }
+    }
+
+    private var ouraConnectRow: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Connect Oura Ring")
+                    .font(KairosTheme.Typography.headline)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                Text("Direct API — sleep, HRV, steps and recovery.")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textSecondary)
+            }
+            Spacer()
+            Button {
+                showTokenEntry = true
+                tokenFocus = true
+            } label: {
+                Text("Connect")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.background)
+                    .padding(.horizontal, KairosTheme.Spacing.md)
+                    .padding(.vertical, KairosTheme.Spacing.xs)
+                    .background(KairosTheme.Colors.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var tokenEntryView: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            HStack {
+                Text("Oura Personal Access Token")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textSecondary)
+                Spacer()
+                Button("Cancel") {
+                    showTokenEntry = false
+                    tokenDraft = ""
+                }
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: KairosTheme.Spacing.sm) {
+                TextField("Paste from cloud.ouraring.com → Personal Access Tokens", text: $tokenDraft)
+                    .textFieldStyle(.plain)
+                    .font(KairosTheme.Typography.mono)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    .focused($tokenFocus)
+                    .onSubmit { submitToken() }
+
+                Button("Save") { submitToken() }
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.background)
+                    .padding(.horizontal, KairosTheme.Spacing.sm)
+                    .padding(.vertical, KairosTheme.Spacing.xs)
+                    .background(tokenDraft.isEmpty ? KairosTheme.Colors.border : KairosTheme.Colors.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+                    .buttonStyle(.plain)
+                    .disabled(tokenDraft.isEmpty)
+            }
+            .padding(KairosTheme.Spacing.sm)
+            .background(KairosTheme.Colors.background)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+
+            Text("Token stored in macOS Keychain — never leaves your device.")
+                .font(KairosTheme.Typography.monoSmall)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+        }
+    }
+
+    private func submitToken() {
+        oura.saveToken(tokenDraft)
+        tokenDraft = ""
+        showTokenEntry = false
+    }
+
+    private var healthKitConnectRow: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Connect Apple Health")
+                    .font(KairosTheme.Typography.headline)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                Text("Reads Oura data synced via iPhone Health app.")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textSecondary)
+            }
+            Spacer()
+            Button {
+                Task { await hk.requestAuthorization() }
+            } label: {
+                Text("Connect")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.background)
+                    .padding(.horizontal, KairosTheme.Spacing.md)
+                    .padding(.vertical, KairosTheme.Spacing.xs)
+                    .background(KairosTheme.Colors.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - States
+
+    private var loadingView: some View {
+        HStack {
+            ProgressView().scaleEffect(0.7)
+            Text("Loading health data…")
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+        }
+    }
+
+    private func errorView(_ message: String) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(KairosTheme.Colors.status(.blocked))
+            Text(message)
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+                .lineLimit(2)
+            Spacer()
+            Button("Retry") {
+                Task { await oura.fetchCurrentSnapshot() }
+            }
+            .font(KairosTheme.Typography.caption)
+            .foregroundStyle(KairosTheme.Colors.accent)
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: - Metrics Grid
@@ -151,7 +325,7 @@ struct HealthPanel: View {
                 )
             }
 
-            // Sleep bar
+            // Sleep quality bar
             if let avg = snap.avgSleepHours {
                 sleepBar(avg)
             }
@@ -172,14 +346,12 @@ struct HealthPanel: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 2).fill(KairosTheme.Colors.border).frame(height: 4)
-                    // Target zone marker (7–9h = optimal)
                     let targetStart = min(7.0 / 10.0, 1.0)
                     let targetEnd   = min(9.0 / 10.0, 1.0)
                     RoundedRectangle(cornerRadius: 0)
                         .fill(KairosTheme.Colors.status(.done).opacity(0.15))
                         .frame(width: (targetEnd - targetStart) * geo.size.width, height: 4)
                         .offset(x: targetStart * geo.size.width)
-                    // Actual
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color(hex: sleepHighlight(avgHours) == .good ? "#4A9A6A" : avgHours >= 6.5 ? "#AA9A4A" : "#9A4A4A"))
                         .frame(width: min(avgHours / 10.0, 1.0) * geo.size.width, height: 4)
@@ -199,53 +371,6 @@ struct HealthPanel: View {
                     .font(KairosTheme.Typography.monoSmall)
                     .foregroundStyle(KairosTheme.Colors.textMuted)
             }
-        }
-    }
-
-    // MARK: - States
-
-    private var authPrompt: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
-                Text("Connect Apple Health")
-                    .font(KairosTheme.Typography.headline)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                Text("Reads Oura Ring data: HRV, sleep, resting HR, VO₂ max.")
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textSecondary)
-            }
-            Spacer()
-            Button {
-                Task { await hk.requestAuthorization() }
-            } label: {
-                Text("Connect")
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.background)
-                    .padding(.horizontal, KairosTheme.Spacing.md)
-                    .padding(.vertical, KairosTheme.Spacing.xs)
-                    .background(KairosTheme.Colors.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var unavailableView: some View {
-        HStack {
-            Image(systemName: "heart.slash")
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-            Text("HealthKit not available on this Mac. Requires Apple Silicon.")
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-        }
-    }
-
-    private var loadingView: some View {
-        HStack {
-            ProgressView().scaleEffect(0.7)
-            Text("Loading health data…")
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
         }
     }
 
@@ -276,14 +401,13 @@ struct HealthPanel: View {
 
     private func vo2Highlight(_ vo2: Double?) -> Highlight {
         guard let v = vo2 else { return .neutral }
-        // Male 40–49 benchmarks (Oura/ACSM)
         if v >= 42 { return .good }
         if v >= 35 { return .warning }
         return .alert
     }
 
     private func formatHours(_ h: Double) -> String {
-        let hrs = Int(h)
+        let hrs  = Int(h)
         let mins = Int((h - Double(hrs)) * 60)
         return mins > 0 ? "\(hrs)h \(mins)m" : "\(hrs)h"
     }
@@ -298,10 +422,10 @@ struct HealthPanel: View {
 // MARK: - MetricTile
 
 struct MetricTile: View {
-    let label: String
-    let value: String
-    let unit: String
-    let trend: Double?   // optional % change vs prior period
+    let label:     String
+    let value:     String
+    let unit:      String
+    let trend:     Double?
     let highlight: HealthPanel.Highlight
 
     private var valueColor: Color {

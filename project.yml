@@ -17,6 +17,7 @@ targets:
       - path: Kairos/Resources/Assets.xcassets
     dependencies:
       - sdk: HealthKit.framework
+      - sdk: Security.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos
