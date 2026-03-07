@@ -200,6 +200,26 @@ struct ReviewView: View {
 
     private var interviewView: some View {
         VStack(spacing: 0) {
+            // Engine status bar
+            HStack {
+                Image(systemName: intelligence.isUsingAI ? "cpu.fill" : "exclamationmark.triangle")
+                    .font(.caption2)
+                    .foregroundStyle(intelligence.isUsingAI ? KairosTheme.Colors.accent : KairosTheme.Colors.textMuted)
+                Text(intelligence.engine.displayName)
+                    .font(KairosTheme.Typography.monoSmall)
+                    .foregroundStyle(intelligence.isUsingAI ? KairosTheme.Colors.textSecondary : KairosTheme.Colors.textMuted)
+                Spacer()
+                Button("End Review") { endInterview() }
+                    .buttonStyle(.plain)
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+            }
+            .padding(.horizontal, KairosTheme.Spacing.xl)
+            .padding(.vertical, KairosTheme.Spacing.sm)
+            .background(KairosTheme.Colors.surface)
+
+            KairosDivider()
+
             // Chat area
             ScrollViewReader { proxy in
                 ScrollView {
@@ -261,12 +281,6 @@ struct ReviewView: View {
                 .buttonStyle(.plain)
                 .disabled(inputText.isEmpty || isThinking)
 
-                Button("End Review") {
-                    endInterview()
-                }
-                .buttonStyle(.plain)
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
             }
             .padding(KairosTheme.Spacing.md)
             .background(KairosTheme.Colors.surface)
@@ -335,12 +349,20 @@ struct ReviewView: View {
         isThinking = true
         streamingResponse = ""
 
+        // Determine persona before streaming — drives both the system prompt and the label
+        let persona = nextPersona()
+
         Task {
             guard let year = currentYear else {
                 await MainActor.run { isThinking = false }
                 return
             }
-            let ctx = intelligence.buildContext(from: year, month: Calendar.current.component(.month, from: Date()), pulses: Array(pulses.prefix(4)))
+            let ctx = intelligence.buildContext(
+                from: year,
+                month: Calendar.current.component(.month, from: Date()),
+                pulses: Array(pulses.prefix(4)),
+                persona: persona
+            )
             let prompt = buildPrompt(userMessage: sent)
 
             do {
@@ -348,7 +370,7 @@ struct ReviewView: View {
                     await MainActor.run { streamingResponse += chunk }
                 }
                 await MainActor.run {
-                    let response = ChatMessage(role: .ai, persona: nextPersona(), content: streamingResponse)
+                    let response = ChatMessage(role: .ai, persona: persona, content: streamingResponse)
                     transcript.append(response)
                     streamingResponse = ""
                     isThinking = false
