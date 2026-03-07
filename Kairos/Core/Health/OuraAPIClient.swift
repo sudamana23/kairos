@@ -1,63 +1,76 @@
 import Foundation
 import Security
 
-// MARK: - Keychain
+// MARK: - Keychain (multi-key)
 
 enum OuraKeychain {
-    private static let service = "com.damianspendel.kairos"
-    private static let account = "oura-pat"
+    static let service = "com.damianspendel.kairos"
 
-    static func save(_ token: String) {
-        guard let data = token.data(using: .utf8) else { return }
-        let query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
+    static func save(_ value: String, forKey key: String) {
+        guard let data = value.data(using: .utf8) else { return }
+        let q: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
-            kSecAttrAccount: account,
-            kSecValueData:   data
+            kSecAttrAccount: key,
+            kSecValueData: data
         ]
-        SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
+        SecItemDelete(q as CFDictionary)
+        SecItemAdd(q as CFDictionary, nil)
     }
 
-    static func load() -> String? {
-        let query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
+    static func load(forKey key: String) -> String? {
+        let q: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
-            kSecAttrAccount: account,
-            kSecReturnData:  true,
-            kSecMatchLimit:  kSecMatchLimitOne
+            kSecAttrAccount: key,
+            kSecReturnData: true,
+            kSecMatchLimit: kSecMatchLimitOne
         ]
         var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+        guard SecItemCopyMatching(q as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data
         else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
-    static func delete() {
-        let query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
+    static func delete(forKey key: String) {
+        let q: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
-            kSecAttrAccount: account
+            kSecAttrAccount: key
         ]
-        SecItemDelete(query as CFDictionary)
+        SecItemDelete(q as CFDictionary)
     }
 }
 
-// MARK: - Oura API v2 Response Models
+// MARK: - Token response (from /oauth/token)
 
-private struct OuraPaginated<T: Decodable>: Decodable {
-    let data: [T]
+struct OuraTokenResponse: Decodable {
+    let accessToken:  String
+    let tokenType:    String
+    let expiresIn:    Int?
+    let refreshToken: String?
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken  = "access_token"
+        case tokenType    = "token_type"
+        case expiresIn    = "expires_in"
+        case refreshToken = "refresh_token"
+    }
 }
 
+// MARK: - Oura API v2 data models (private)
+
+private struct OuraPaginated<T: Decodable>: Decodable { let data: [T] }
+
 private struct OuraSleepItem: Decodable {
-    let day: String
+    let day:                String
     let totalSleepDuration: Int?
     let deepSleepDuration:  Int?
     let remSleepDuration:   Int?
-    let averageHrv:         Int?     // RMSSD in ms
-    let lowestHeartRate:    Int?     // resting HR
-    let averageBreath:      Double?  // breaths/min
+    let averageHrv:         Int?
+    let lowestHeartRate:    Int?
+    let averageBreath:      Double?
 
     enum CodingKeys: String, CodingKey {
         case day
@@ -96,22 +109,25 @@ private struct OuraVo2MaxItem: Decodable {
 
 enum OuraError: LocalizedError {
     case httpError(Int)
+    case notAuthorized
+    case noCredentials
 
     var errorDescription: String? {
         switch self {
-        case .httpError(401): return "Invalid token — check your Oura Personal Access Token."
+        case .httpError(401): return "Oura authorization expired — reconnect in the Body panel."
         case .httpError(let c): return "Oura API error (HTTP \(c))."
+        case .notAuthorized: return "Not connected to Oura."
+        case .noCredentials: return "Oura credentials not configured."
         }
     }
 }
 
-// MARK: - API Client
+// MARK: - API Client (data fetching only — auth handled by OuraManager)
 
 struct OuraAPIClient {
-    private let base  = "https://api.ouraring.com/v2/usercollection"
-    let token: String
+    private let base: String = "https://api.ouraring.com/v2/usercollection"
+    let accessToken: String
 
-    // Throwing fetch — used for required endpoints (sleep, activity)
     private func get<T: Decodable>(_ endpoint: String, start: String, end: String) async throws -> [T] {
         var comps = URLComponents(string: "\(base)/\(endpoint)")!
         comps.queryItems = [
@@ -119,7 +135,7 @@ struct OuraAPIClient {
             URLQueryItem(name: "end_date",   value: end)
         ]
         var req = URLRequest(url: comps.url!)
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         let (data, resp) = try await URLSession.shared.data(for: req)
         if let http = resp as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw OuraError.httpError(http.statusCode)
@@ -127,18 +143,17 @@ struct OuraAPIClient {
         return try JSONDecoder().decode(OuraPaginated<T>.self, from: data).data
     }
 
-    // Silent fetch — used for optional endpoints (vo2_max — not all rings support it)
+    // Optional endpoint — returns empty array instead of throwing
     private func safeGet<T: Decodable>(_ endpoint: String, start: String, end: String) async -> [T] {
         (try? await get(endpoint, start: start, end: end)) ?? []
     }
 
-    // MARK: - Build HealthSnapshot
+    // MARK: Build HealthSnapshot
 
     func buildSnapshot(from start: Date, to end: Date) async throws -> HealthSnapshot {
         let s = ouraDateFmt.string(from: start)
         let e = ouraDateFmt.string(from: end)
 
-        // Kick off all three requests in parallel
         async let sleepTask:    [OuraSleepItem]    = get("daily_sleep",    start: s, end: e)
         async let activityTask: [OuraActivityItem] = get("daily_activity", start: s, end: e)
         async let vo2Task:      [OuraVo2MaxItem]   = safeGet("vo2_max",    start: s, end: e)
@@ -147,37 +162,30 @@ struct OuraAPIClient {
         let activity = try await activityTask
         let vo2      = await vo2Task
 
-        // HRV — average RMSSD across the period
-        let hrvVals = sleep.compactMap { $0.averageHrv.map(Double.init) }
-        let avgHRV  = hrvVals.isEmpty ? nil : hrvVals.reduce(0, +) / Double(hrvVals.count)
+        let hrvVals  = sleep.compactMap { $0.averageHrv.map(Double.init) }
+        let avgHRV   = hrvVals.isEmpty  ? nil : hrvVals.reduce(0, +)  / Double(hrvVals.count)
 
-        // Resting HR — average lowest_heart_rate from sleep sessions
-        let rhrVals = sleep.compactMap { $0.lowestHeartRate.map(Double.init) }
-        let avgRHR  = rhrVals.isEmpty ? nil : rhrVals.reduce(0, +) / Double(rhrVals.count)
+        let rhrVals  = sleep.compactMap { $0.lowestHeartRate.map(Double.init) }
+        let avgRHR   = rhrVals.isEmpty  ? nil : rhrVals.reduce(0, +)  / Double(rhrVals.count)
 
-        // Respiratory rate — average breath per minute during sleep
         let respVals = sleep.compactMap { $0.averageBreath }
         let avgResp  = respVals.isEmpty ? nil : respVals.reduce(0, +) / Double(respVals.count)
 
-        // Sleep — most recent entry = last night
-        let sorted        = sleep.sorted { $0.day > $1.day }
-        let last          = sorted.first
-        let lastTotal     = last?.totalSleepDuration.map { Double($0) / 3600 }
-        let lastDeep      = last?.deepSleepDuration.map  { Double($0) / 3600 }
-        let lastREM       = last?.remSleepDuration.map   { Double($0) / 3600 }
+        let sorted   = sleep.sorted { $0.day > $1.day }
+        let last     = sorted.first
+        let lastTotal = last?.totalSleepDuration.map { Double($0) / 3600 }
+        let lastDeep  = last?.deepSleepDuration.map  { Double($0) / 3600 }
+        let lastREM   = last?.remSleepDuration.map   { Double($0) / 3600 }
 
-        // Sleep — 7-day rolling average
         let sleepHrs = sleep.compactMap { $0.totalSleepDuration.map { Double($0) / 3600 } }
         let avgSleep = sleepHrs.isEmpty ? nil : sleepHrs.reduce(0, +) / Double(sleepHrs.count)
 
-        // Activity
         let stepsVals = activity.compactMap { $0.steps.map(Double.init) }
         let avgSteps  = stepsVals.isEmpty ? nil : stepsVals.reduce(0, +) / Double(stepsVals.count)
 
         let calVals  = activity.compactMap { $0.activeCalories.map(Double.init) }
-        let avgCals  = calVals.isEmpty ? nil : calVals.reduce(0, +) / Double(calVals.count)
+        let avgCals  = calVals.isEmpty  ? nil : calVals.reduce(0, +)  / Double(calVals.count)
 
-        // VO2 Max — most recent reading
         let latestVo2 = vo2.sorted { $0.day > $1.day }.first?.vo2Max
 
         return HealthSnapshot(

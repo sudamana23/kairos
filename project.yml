@@ -39,3 +39,8 @@ targets:
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSHealthShareUsageDescription: "Kairos reads your health data to surface physiological context during life reviews."
         NSMicrophoneUsageDescription: "Kairos uses the microphone for voice pulse check-ins and monthly review recordings."
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - kairos
+            CFBundleURLName: com.damianspendel.kairos
+            CFBundleTypeRole: Viewer

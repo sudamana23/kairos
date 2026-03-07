@@ -9,9 +9,11 @@ struct HealthPanel: View {
     @ObservedObject private var oura = OuraManager.shared
     @ObservedObject private var hk   = HealthKitManager.shared
 
-    @State private var showTokenEntry   = false
-    @State private var tokenDraft       = ""
-    @FocusState private var tokenFocus: Bool
+    // Setup form state
+    @State private var clientIdDraft     = ""
+    @State private var clientSecretDraft = ""
+    enum CredentialField { case clientId, clientSecret }
+    @FocusState private var setupFocus: CredentialField?
 
     // Prefer Oura; fall back to HealthKit
     private var activeSnapshot: HealthSnapshot? { oura.snapshot ?? hk.snapshot }
@@ -47,6 +49,11 @@ struct HealthPanel: View {
                 await hk.fetchCurrentSnapshot()
             }
         }
+        .onAppear {
+            // Pre-fill if credentials already saved (in case of re-auth after token expiry)
+            clientIdDraft = ""
+            clientSecretDraft = ""
+        }
     }
 
     // MARK: - Header
@@ -72,13 +79,13 @@ struct HealthPanel: View {
                 .buttonStyle(.plain)
             }
             if oura.isAuthorized {
-                Button { oura.revoke() } label: {
+                Button { oura.disconnectTokens() } label: {
                     Image(systemName: "xmark.circle")
                         .font(.caption)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
                 .buttonStyle(.plain)
-                .help("Disconnect Oura")
+                .help("Disconnect — keeps credentials, just re-authorize")
             }
         }
     }
@@ -102,93 +109,161 @@ struct HealthPanel: View {
 
     private var connectionView: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            if showTokenEntry {
-                tokenEntryView
+            if !oura.isConfigured {
+                // Step 1: enter client credentials
+                credentialSetupView
             } else {
-                ouraConnectRow
-                if hk.isAvailable && !hk.isAuthorized {
-                    KairosDivider()
-                    healthKitConnectRow
-                }
+                // Step 2: authorize in browser
+                authorizeView
+            }
+            if hk.isAvailable && !hk.isAuthorized {
+                KairosDivider()
+                healthKitConnectRow
             }
         }
     }
 
-    private var ouraConnectRow: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Connect Oura Ring")
-                    .font(KairosTheme.Typography.headline)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                Text("Direct API — sleep, HRV, steps and recovery.")
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textSecondary)
+    // MARK: - Step 1: Credential setup
+
+    private var credentialSetupView: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Connect Oura Ring")
+                        .font(KairosTheme.Typography.headline)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    Text("OAuth via your registered app — sleep, HRV, steps, recovery.")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textSecondary)
+                }
             }
-            Spacer()
-            Button {
-                showTokenEntry = true
-                tokenFocus = true
-            } label: {
-                Text("Connect")
+
+            // Instructions
+            VStack(alignment: .leading, spacing: 4) {
+                instructionRow(n: "1", text: "Register at cloud.ouraring.com → OAuth Applications")
+                HStack(spacing: 4) {
+                    instructionRow(n: "2", text: "Set redirect URI:")
+                    Text(OuraManager.redirectURI)
+                        .font(KairosTheme.Typography.mono)
+                        .foregroundStyle(KairosTheme.Colors.accent)
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(OuraManager.redirectURI, forType: .string)
+                    } label: {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 10))
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Copy redirect URI")
+                }
+                instructionRow(n: "3", text: "Paste your Client ID and Secret below")
+            }
+            .padding(KairosTheme.Spacing.sm)
+            .background(KairosTheme.Colors.background)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+
+            // Credential fields
+            VStack(spacing: KairosTheme.Spacing.xs) {
+                credentialField(label: "Client ID", text: $clientIdDraft, field: .clientId)
+                credentialField(label: "Client Secret", text: $clientSecretDraft, field: .clientSecret)
+            }
+
+            HStack {
+                Spacer()
+                Button("Continue →") {
+                    oura.saveCredentials(clientId: clientIdDraft, clientSecret: clientSecretDraft)
+                    clientIdDraft = ""
+                    clientSecretDraft = ""
+                }
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.background)
+                .padding(.horizontal, KairosTheme.Spacing.md)
+                .padding(.vertical, KairosTheme.Spacing.xs)
+                .background(credentialsValid ? KairosTheme.Colors.accent : KairosTheme.Colors.border)
+                .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+                .buttonStyle(.plain)
+                .disabled(!credentialsValid)
+            }
+        }
+    }
+
+    private var credentialsValid: Bool {
+        !clientIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !clientSecretDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func instructionRow(n: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Text(n + ".")
+                .font(KairosTheme.Typography.monoSmall)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+                .frame(width: 12, alignment: .trailing)
+            Text(text)
+                .font(KairosTheme.Typography.monoSmall)
+                .foregroundStyle(KairosTheme.Colors.textSecondary)
+        }
+    }
+
+    private func credentialField(label: String, text: Binding<String>, field: CredentialField) -> some View {
+        HStack {
+            Text(label + ":")
+                .font(KairosTheme.Typography.monoSmall)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+                .frame(width: 90, alignment: .trailing)
+            TextField("", text: text)
+                .textFieldStyle(.plain)
+                .font(KairosTheme.Typography.mono)
+                .foregroundStyle(KairosTheme.Colors.textPrimary)
+                .focused($setupFocus, equals: field)
+        }
+        .padding(KairosTheme.Spacing.xs)
+        .background(KairosTheme.Colors.background)
+        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+        .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm)
+            .stroke(KairosTheme.Colors.border, lineWidth: 1))
+    }
+
+    // MARK: - Step 2: Authorize
+
+    private var authorizeView: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Oura app registered")
+                        .font(KairosTheme.Typography.headline)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    Text("Complete OAuth in your browser to start syncing.")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textSecondary)
+                }
+                Spacer()
+                Button {
+                    oura.startAuthorization()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Authorize with Oura")
+                        Image(systemName: "arrow.up.right.square")
+                    }
                     .font(KairosTheme.Typography.caption)
                     .foregroundStyle(KairosTheme.Colors.background)
                     .padding(.horizontal, KairosTheme.Spacing.md)
                     .padding(.vertical, KairosTheme.Spacing.xs)
                     .background(KairosTheme.Colors.accent)
                     .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private var tokenEntryView: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            HStack {
-                Text("Oura Personal Access Token")
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textSecondary)
-                Spacer()
-                Button("Cancel") {
-                    showTokenEntry = false
-                    tokenDraft = ""
                 }
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
                 .buttonStyle(.plain)
             }
-
-            HStack(spacing: KairosTheme.Spacing.sm) {
-                TextField("Paste from cloud.ouraring.com → Personal Access Tokens", text: $tokenDraft)
-                    .textFieldStyle(.plain)
-                    .font(KairosTheme.Typography.mono)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    .focused($tokenFocus)
-                    .onSubmit { submitToken() }
-
-                Button("Save") { submitToken() }
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.background)
-                    .padding(.horizontal, KairosTheme.Spacing.sm)
-                    .padding(.vertical, KairosTheme.Spacing.xs)
-                    .background(tokenDraft.isEmpty ? KairosTheme.Colors.border : KairosTheme.Colors.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-                    .buttonStyle(.plain)
-                    .disabled(tokenDraft.isEmpty)
+            if let err = oura.fetchError {
+                Text(err)
+                    .font(KairosTheme.Typography.monoSmall)
+                    .foregroundStyle(KairosTheme.Colors.status(.blocked))
             }
-            .padding(KairosTheme.Spacing.sm)
-            .background(KairosTheme.Colors.background)
-            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-
-            Text("Token stored in macOS Keychain — never leaves your device.")
+            Button("Reset credentials") { oura.resetAll() }
                 .font(KairosTheme.Typography.monoSmall)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
+                .buttonStyle(.plain)
         }
-    }
-
-    private func submitToken() {
-        oura.saveToken(tokenDraft)
-        tokenDraft = ""
-        showTokenEntry = false
     }
 
     private var healthKitConnectRow: some View {

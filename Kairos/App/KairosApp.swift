@@ -27,6 +27,10 @@ struct KairosApp: App {
             AppRootView()
                 .modelContainer(modelContainer)
                 .task { await SeedData.seedIfNeeded(in: modelContainer) }
+                .onOpenURL { url in
+                    // Handle Oura OAuth callback: kairos://oauth/callback?code=...
+                    Task { await OuraManager.shared.handleCallback(url: url) }
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
