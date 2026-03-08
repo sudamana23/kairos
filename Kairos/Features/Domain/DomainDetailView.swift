@@ -283,6 +283,7 @@ struct ObjectiveRow: View {
                     Image(systemName: "trash")
                         .font(.caption)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .touchTarget()
                 }
                 .buttonStyle(.plain)
                 .help("Delete objective")
@@ -292,6 +293,8 @@ struct ObjectiveRow: View {
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                 .font(.caption)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
+                .touchTarget()
+                .contentShape(Rectangle())
                 .onTapGesture { onTap() }
         }
         .padding(KairosTheme.Spacing.md)
@@ -445,6 +448,7 @@ struct KeyResultRow: View {
                         Image(systemName: "trash")
                             .font(.system(size: 10))
                             .foregroundStyle(KairosTheme.Colors.textMuted)
+                            .touchTarget()
                     }
                     .buttonStyle(.plain)
                     .help("Delete key result")

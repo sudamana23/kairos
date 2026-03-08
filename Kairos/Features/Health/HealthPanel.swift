@@ -15,9 +15,22 @@ struct HealthPanel: View {
     enum CredentialField { case clientId, clientSecret }
     @FocusState private var setupFocus: CredentialField?
 
-    // Prefer Oura; fall back to HealthKit
-    private var activeSnapshot: HealthSnapshot? { oura.snapshot ?? hk.snapshot }
-    private var panelTitle: String { oura.snapshot != nil ? "Oura · 30-Day Signal" : "Body · 30-Day Signal" }
+    // macOS: prefer Oura, fall back to HealthKit
+    // iOS/iPadOS: HealthKit only
+    private var activeSnapshot: HealthSnapshot? {
+        #if os(macOS)
+        return oura.snapshot ?? hk.snapshot
+        #else
+        return hk.snapshot
+        #endif
+    }
+    private var panelTitle: String {
+        #if os(macOS)
+        return oura.snapshot != nil ? "Oura · 30-Day Signal" : "Body · 30-Day Signal"
+        #else
+        return "Apple Health · 30-Day Signal"
+        #endif
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
@@ -43,11 +56,17 @@ struct HealthPanel: View {
                 .stroke(KairosTheme.Colors.border, lineWidth: 1)
         )
         .task {
+            #if os(macOS)
             if oura.isAuthorized && oura.snapshot == nil {
                 await oura.fetchCurrentSnapshot()
             } else if hk.isAuthorized && hk.snapshot == nil {
                 await hk.fetchCurrentSnapshot()
             }
+            #else
+            if hk.isAuthorized && hk.snapshot == nil {
+                await hk.fetchCurrentSnapshot()
+            }
+            #endif
         }
         .onAppear {
             // Pre-fill if credentials already saved (in case of re-auth after token expiry)
@@ -78,6 +97,7 @@ struct HealthPanel: View {
                 }
                 .buttonStyle(.plain)
             }
+            #if os(macOS)
             if oura.isAuthorized {
                 Button { oura.disconnectTokens() } label: {
                     Image(systemName: "xmark.circle")
@@ -87,6 +107,7 @@ struct HealthPanel: View {
                 .buttonStyle(.plain)
                 .help("Disconnect — keeps credentials, just re-authorize")
             }
+            #endif
         }
     }
 
@@ -109,21 +130,27 @@ struct HealthPanel: View {
 
     private var connectionView: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            #if os(macOS)
+            // macOS: Oura first, HealthKit as secondary fallback
             if !oura.isConfigured {
-                // Step 1: enter client credentials
                 credentialSetupView
             } else {
-                // Step 2: authorize in browser
                 authorizeView
             }
             if hk.isAvailable && !hk.isAuthorized {
                 KairosDivider()
                 healthKitConnectRow
             }
+            #else
+            // iPad: HealthKit is the primary (and only) source
+            healthKitConnectRow
+            #endif
         }
     }
 
-    // MARK: - Step 1: Credential setup
+    // MARK: - Oura setup views (macOS only)
+
+    #if os(macOS)
 
     private var credentialSetupView: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
@@ -265,6 +292,10 @@ struct HealthPanel: View {
                 .buttonStyle(.plain)
         }
     }
+
+    #endif // os(macOS)
+
+    // MARK: - HealthKit connect row (all platforms)
 
     private var healthKitConnectRow: some View {
         HStack {

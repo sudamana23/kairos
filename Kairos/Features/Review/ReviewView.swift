@@ -867,7 +867,11 @@ struct ReviewTranscriptSheet: View {
             }
         }
         .background(KairosTheme.Colors.background)
+        #if os(macOS)
         .frame(minWidth: 600, minHeight: 400)
+        #else
+        .frame(minWidth: 320, minHeight: 400)
+        #endif
     }
 }
 
@@ -905,6 +909,7 @@ struct PastReviewRow: View {
                     Image(systemName: "trash")
                         .font(.caption2)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .touchTarget()
                 }
                 .buttonStyle(.plain)
                 .help("Delete review")

@@ -369,6 +369,7 @@ struct PulseHistoryRow: View {
                         Image(systemName: "trash")
                             .font(.caption2)
                             .foregroundStyle(KairosTheme.Colors.textMuted)
+                            .touchTarget()
                     }
                     .buttonStyle(.plain)
                     .help("Delete pulse")

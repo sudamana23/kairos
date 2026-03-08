@@ -133,3 +133,16 @@ struct KairosDivider: View {
             .frame(height: 1)
     }
 }
+
+// MARK: - Touch Target Modifier
+// Ensures minimum 44×44pt tap area on iOS; no-op on macOS.
+
+extension View {
+    @ViewBuilder func touchTarget() -> some View {
+        #if os(iOS)
+        self.frame(minWidth: 44, minHeight: 44)
+        #else
+        self
+        #endif
+    }
+}

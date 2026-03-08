@@ -1,5 +1,9 @@
 import Foundation
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - OuraManager
 //
@@ -69,7 +73,11 @@ final class OuraManager: ObservableObject {
             URLQueryItem(name: "state",         value: state)
         ]
         guard let url = comps.url else { return }
+        #if os(macOS)
         NSWorkspace.shared.open(url)
+        #else
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        #endif
     }
 
     // MARK: - OAuth: step 2 — handle callback from kairos://oauth/callback

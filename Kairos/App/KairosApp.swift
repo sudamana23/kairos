@@ -41,6 +41,7 @@ struct KairosApp: App {
                     Task { await OuraManager.shared.handleCallback(url: url) }
                 }
         }
+        #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
         .defaultSize(width: 1280, height: 820)
@@ -48,6 +49,7 @@ struct KairosApp: App {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
         }
+        #endif
     }
 }
 
