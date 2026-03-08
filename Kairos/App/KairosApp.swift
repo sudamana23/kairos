@@ -56,7 +56,8 @@ struct KairosApp: App {
 // MARK: - AppRootView
 
 struct AppRootView: View {
-    @State private var selection: KairosRoute = .dashboard
+    // Optional so List(selection:) works on both macOS and iOS
+    @State private var selection: KairosRoute? = .dashboard
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
@@ -66,7 +67,7 @@ struct AppRootView: View {
         } detail: {
             ZStack {
                 KairosTheme.Colors.background.ignoresSafeArea()
-                routeView(for: selection)
+                routeView(for: selection ?? .dashboard)
             }
         }
         .background(KairosTheme.Colors.background)

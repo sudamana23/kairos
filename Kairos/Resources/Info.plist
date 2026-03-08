@@ -45,6 +45,17 @@
 	<string>NSApplication</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Kairos transcribes your voice notes on-device for weekly pulse check-ins.</string>
+	<!-- iOS / iPadOS: scene lifecycle (required for SwiftUI @main on iOS 13+) -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
+	<!-- iOS / iPadOS: blank launch screen (no storyboard needed for SwiftUI) -->
+	<key>UILaunchScreen</key>
+	<dict/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

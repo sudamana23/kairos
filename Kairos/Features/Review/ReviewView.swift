@@ -35,13 +35,15 @@ struct ReviewView: View {
     @State private var streamingResponse = ""
     @State private var selectedReview: KairosMonthlyReview?
 
+    /// The calendar date representing the period being reviewed (always the previous calendar month)
+    private var reviewDate: Date {
+        Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+    }
+    private var reviewYear:  Int { Calendar.current.component(.year,  from: reviewDate) }
+    private var reviewMonth: Int { Calendar.current.component(.month, from: reviewDate) }
+
     private var currentMonthReview: KairosMonthlyReview? {
-        let cal = Calendar.current
-        let now = Date()
-        return reviews.first {
-            $0.year == cal.component(.year, from: now) &&
-            $0.month == cal.component(.month, from: now)
-        }
+        reviews.first { $0.year == reviewYear && $0.month == reviewMonth }
     }
 
     private var currentYear: KairosYear? { years.first { $0.year == 2026 } }
@@ -106,7 +108,7 @@ struct ReviewView: View {
 
     private var monthTitle: String {
         let f = DateFormatter(); f.dateFormat = "MMMM yyyy"
-        return f.string(from: Date())
+        return f.string(from: reviewDate)
     }
 
     private func reviewDataPreview(_ year: KairosYear) -> some View {
@@ -514,13 +516,9 @@ struct ReviewView: View {
         pendingRatings = [:]
         pendingCommentaries = [:]
 
-        // Pre-populate from existing current-month entries
-        let cal = Calendar.current
-        let now = Date()
-        let thisYear = cal.component(.year, from: now)
-        let thisMonth = cal.component(.month, from: now)
+        // Pre-populate from existing prior-month entries
         for item in allKRs {
-            if let entry = item.kr.entries.first(where: { $0.year == thisYear && $0.month == thisMonth }) {
+            if let entry = item.kr.entries.first(where: { $0.year == reviewYear && $0.month == reviewMonth }) {
                 pendingStatuses[item.kr.id]     = entry.statusEnum
                 pendingRatings[item.kr.id]      = entry.rating
                 pendingCommentaries[item.kr.id] = entry.commentary
@@ -530,24 +528,19 @@ struct ReviewView: View {
     }
 
     private func commitWizardAndStartInterview() {
-        let cal = Calendar.current
-        let now = Date()
-        let thisYear  = cal.component(.year,  from: now)
-        let thisMonth = cal.component(.month, from: now)
-
         for item in allKRs {
             let kr     = item.kr
             let status = pendingStatuses[kr.id]     ?? kr.currentStatus
             let rating = pendingRatings[kr.id]      ?? 0
             let note   = pendingCommentaries[kr.id] ?? ""
 
-            // Find or create entry for this month
-            if let existing = kr.entries.first(where: { $0.year == thisYear && $0.month == thisMonth }) {
+            // Find or create entry for the prior month being reviewed
+            if let existing = kr.entries.first(where: { $0.year == reviewYear && $0.month == reviewMonth }) {
                 existing.statusEnum  = status
                 existing.rating      = rating
                 existing.commentary  = note
             } else {
-                let entry = KairosMonthlyEntry(year: thisYear, month: thisMonth, status: status, rating: rating, commentary: note)
+                let entry = KairosMonthlyEntry(year: reviewYear, month: reviewMonth, status: status, rating: rating, commentary: note)
                 context.insert(entry)
                 kr.entries.append(entry)
             }
@@ -565,12 +558,9 @@ struct ReviewView: View {
     }
 
     private func openingMessage() -> String {
-        let cal   = Calendar.current
-        let month = cal.component(.month, from: Date())
-        let year  = cal.component(.year,  from: Date())
-        let name  = DateFormatter().monthSymbols[month - 1]
+        let name = DateFormatter().monthSymbols[reviewMonth - 1]
 
-        var parts = ["It's \(name) \(year)."]
+        var parts = ["Reviewing \(name) \(reviewYear)."]
         if let y = currentYear {
             let lowDomains = y.sortedDomains.filter { $0.progress < 0.2 }.map { $0.name }
             if !lowDomains.isEmpty { parts.append("I notice \(lowDomains.joined(separator: ", ")) hasn't moved much.") }
@@ -605,7 +595,7 @@ struct ReviewView: View {
             }
             let ctx = intelligence.buildContext(
                 from: year,
-                month: Calendar.current.component(.month, from: Date()),
+                month: reviewMonth,
                 pulses: Array(pulses.prefix(4)),
                 persona: persona
             )
@@ -642,8 +632,8 @@ struct ReviewView: View {
 
     private func endInterview() {
         let review = KairosMonthlyReview(
-            year:  Calendar.current.component(.year,  from: Date()),
-            month: Calendar.current.component(.month, from: Date())
+            year:  reviewYear,
+            month: reviewMonth
         )
         review.transcript = transcript
             .map { "\($0.role == .user ? "You" : $0.persona?.rawValue ?? "Council"): \($0.content)" }

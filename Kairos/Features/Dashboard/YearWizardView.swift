@@ -301,7 +301,9 @@ struct YearWizardView: View {
             ForEach(domain.objectives) { $obj in
                 HStack(spacing: KairosTheme.Spacing.sm) {
                     Toggle("", isOn: $obj.enabled)
+                        #if os(macOS)
                         .toggleStyle(.checkbox)
+                        #endif
                         .labelsHidden()
                     TextField("Objective", text: $obj.title)
                         .textFieldStyle(.plain)
@@ -361,7 +363,9 @@ struct YearWizardView: View {
             ForEach(objective.keyResults) { $kr in
                 HStack(spacing: KairosTheme.Spacing.sm) {
                     Toggle("", isOn: $kr.enabled)
+                        #if os(macOS)
                         .toggleStyle(.checkbox)
+                        #endif
                         .labelsHidden()
                     TextField("Key result", text: $kr.title)
                         .textFieldStyle(.plain)

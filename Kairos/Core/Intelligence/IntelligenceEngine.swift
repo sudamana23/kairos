@@ -112,7 +112,7 @@ enum IntelligenceError: LocalizedError {
 // MARK: - Foundation Models Engine (macOS 26+)
 
 #if canImport(FoundationModels)
-@available(macOS 26, *)
+@available(macOS 26, iOS 26, *)
 final class FoundationModelsEngine: IntelligenceEngine, @unchecked Sendable {
 
     var isAvailable: Bool { SystemLanguageModel.default.isAvailable }
@@ -242,7 +242,7 @@ final class IntelligenceManager: ObservableObject {
 
     private func selectBestAvailableEngine() {
         #if canImport(FoundationModels)
-        if #available(macOS 26, *) {
+        if #available(macOS 26, iOS 26, *) {
             let fm = FoundationModelsEngine()
             engine = fm
             isUsingAI = fm.isAvailable
