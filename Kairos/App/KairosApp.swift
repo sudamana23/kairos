@@ -100,7 +100,7 @@ enum KairosRoute: Hashable {
 // MARK: - KairosSidebar
 
 struct KairosSidebar: View {
-    @Binding var selection: KairosRoute
+    @Binding var selection: KairosRoute?
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @Query private var allKeyResults: [KairosKeyResult]

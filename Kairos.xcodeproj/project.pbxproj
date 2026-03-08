@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		06609779676F65E29F09FEFF /* KairosModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45776E726307E4B00C81E4C3 /* KairosModels.swift */; };
+		B2C484A7F5A34AAAAC4B12DD /* KairosExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = D666DE6C18A142F5A149D567 /* KairosExport.swift */; };
 		19627B09651E16118A885449 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 959B6E492A6F6EE70009A1E2 /* Assets.xcassets */; };
 		297ED0DB3144A7638FC957EA /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65D197D93C962CA514EA3BD6 /* HealthKit.framework */; };
 		2EA344156E987BE049FABA72 /* HealthPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */; };
@@ -40,6 +41,7 @@
 		630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearWizardView.swift; sourceTree = "<group>"; };
 		65D197D93C962CA514EA3BD6 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRecorder.swift; sourceTree = "<group>"; };
+		D666DE6C18A142F5A149D567 /* KairosExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosExport.swift; sourceTree = "<group>"; };
 		666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		959B6E492A6F6EE70009A1E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -246,6 +248,7 @@
 		DEC0786F22821775EFAA4883 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				D666DE6C18A142F5A149D567 /* KairosExport.swift */,
 				B05BD95988659F3B1C387E9F /* SeedData.swift */,
 				664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */,
 			);
@@ -346,6 +349,7 @@
 				76F5F9D2E0AC7E233FE84F08 /* IntelligenceEngine.swift in Sources */,
 				BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */,
 				06609779676F65E29F09FEFF /* KairosModels.swift in Sources */,
+				B2C484A7F5A34AAAAC4B12DD /* KairosExport.swift in Sources */,
 				3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */,
 				6D72A5890900286E28E0ECD6 /* NotificationManager.swift in Sources */,
 				2EB77D17CE9743E226BCD191 /* OuraAPIClient.swift in Sources */,
