@@ -11,13 +11,11 @@ targets:
     platform: macOS
     sources:
       - path: Kairos
-        excludes:
-          - Resources/Assets.xcassets
-    resources:
-      - path: Kairos/Resources/Assets.xcassets
     dependencies:
       - sdk: HealthKit.framework
       - sdk: Security.framework
+      - sdk: Speech.framework
+      - sdk: UserNotifications.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos
@@ -26,6 +24,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: 5Y9SADJQM9
         CODE_SIGN_ENTITLEMENTS: Kairos/Resources/Kairos.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_STRICT_CONCURRENCY: targeted
@@ -41,6 +40,7 @@ targets:
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSHealthShareUsageDescription: "Kairos reads your health data to surface physiological context during life reviews."
         NSMicrophoneUsageDescription: "Kairos uses the microphone for voice pulse check-ins and monthly review recordings."
+        NSSpeechRecognitionUsageDescription: "Kairos transcribes your voice notes on-device for weekly pulse check-ins."
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - kairos

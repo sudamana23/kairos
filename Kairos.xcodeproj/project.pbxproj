@@ -8,17 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		06609779676F65E29F09FEFF /* KairosModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45776E726307E4B00C81E4C3 /* KairosModels.swift */; };
+		19627B09651E16118A885449 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 959B6E492A6F6EE70009A1E2 /* Assets.xcassets */; };
 		297ED0DB3144A7638FC957EA /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65D197D93C962CA514EA3BD6 /* HealthKit.framework */; };
 		2EA344156E987BE049FABA72 /* HealthPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */; };
 		2EB77D17CE9743E226BCD191 /* OuraAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F875CD0A564212A6EF5DC2 /* OuraAPIClient.swift */; };
+		31390F23E6C1994D3EB6B988 /* YearWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */; };
 		3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */; };
 		40307F763177F607660F7FFA /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9115EA9AF8705CF2A7B5A38 /* ReviewView.swift */; };
+		40B7117085D5E8927C7C54BC /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */; };
 		41069C99611769952ADA5462 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */; };
+		577C85CFAA1EC327C072856B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3357591E2906E01CB815682 /* SettingsView.swift */; };
 		611068D42F6058A48B70C549 /* SeedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05BD95988659F3B1C387E9F /* SeedData.swift */; };
 		642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A76FE310D5F8F56EA21A7B6 /* Security.framework */; };
+		6D72A5890900286E28E0ECD6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD38753F7B2A7B90825FC699 /* NotificationManager.swift */; };
 		76F5F9D2E0AC7E233FE84F08 /* IntelligenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */; };
 		7A593F55783067B82DB36BD7 /* PulseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1647A8684DE1BAF6C2747703 /* PulseView.swift */; };
+		8772C502A0692EA695B6D231 /* Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D05D38BD6EA74A634C67FA8D /* Speech.framework */; };
 		B0C831A0B764CB84F550DA2B /* TimeMachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53E427D97E690230DA11181 /* TimeMachineView.swift */; };
+		BAC5B10010F3A0EC4CB1D454 /* VoiceRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */; };
 		BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF341935C3B2CBC215BC7E16 /* KairosApp.swift */; };
 		C1029FBDD30D1605F932B43C /* OuraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25217559A2924CE96309241 /* OuraManager.swift */; };
 		C5E6222653F9228213982DB4 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89FBF929237810DD1FA8EBD /* HealthKitManager.swift */; };
@@ -30,16 +37,23 @@
 		2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPanel.swift; sourceTree = "<group>"; };
 		45776E726307E4B00C81E4C3 /* KairosModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosModels.swift; sourceTree = "<group>"; };
 		4A76FE310D5F8F56EA21A7B6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearWizardView.swift; sourceTree = "<group>"; };
 		65D197D93C962CA514EA3BD6 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRecorder.swift; sourceTree = "<group>"; };
+		666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		959B6E492A6F6EE70009A1E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A53E427D97E690230DA11181 /* TimeMachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeMachineView.swift; sourceTree = "<group>"; };
 		A802C70405445110405CB258 /* DomainDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainDetailView.swift; sourceTree = "<group>"; };
 		A8DC59B9CE15C341640F89ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A8F875CD0A564212A6EF5DC2 /* OuraAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraAPIClient.swift; sourceTree = "<group>"; };
+		AD38753F7B2A7B90825FC699 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		B05BD95988659F3B1C387E9F /* SeedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedData.swift; sourceTree = "<group>"; };
 		B89FBF929237810DD1FA8EBD /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		C25217559A2924CE96309241 /* OuraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OuraManager.swift; sourceTree = "<group>"; };
+		C3357591E2906E01CB815682 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosTheme.swift; sourceTree = "<group>"; };
+		D05D38BD6EA74A634C67FA8D /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		E43372EFD253509C9CD5A7F7 /* Kairos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kairos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
 		F5D11480CDABC38A6F47CE04 /* Kairos.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Kairos.entitlements; sourceTree = "<group>"; };
@@ -54,6 +68,8 @@
 			files = (
 				297ED0DB3144A7638FC957EA /* HealthKit.framework in Frameworks */,
 				642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */,
+				8772C502A0692EA695B6D231 /* Speech.framework in Frameworks */,
+				40B7117085D5E8927C7C54BC /* UserNotifications.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,6 +89,8 @@
 			children = (
 				65D197D93C962CA514EA3BD6 /* HealthKit.framework */,
 				4A76FE310D5F8F56EA21A7B6 /* Security.framework */,
+				D05D38BD6EA74A634C67FA8D /* Speech.framework */,
+				666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -93,6 +111,7 @@
 				E1C4647E15FCFE1E1AC402A6 /* Health */,
 				031A667D27144BC1F6B19E72 /* Pulse */,
 				47FC9B8760DDD4CB8ECDB24C /* Review */,
+				E2342E3899AA847EA00886C7 /* Settings */,
 				98F79592B3320F6A377FBF7C /* TimeMachine */,
 			);
 			path = Features;
@@ -125,6 +144,14 @@
 			path = DesignSystem;
 			sourceTree = "<group>";
 		};
+		2D2AC9185C7CBE2060EE0464 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				AD38753F7B2A7B90825FC699 /* NotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
 		47FC9B8760DDD4CB8ECDB24C /* Review */ = {
 			isa = PBXGroup;
 			children = (
@@ -141,6 +168,7 @@
 				1BD23700DDABD1E9CBF440CF /* Health */,
 				66B96042E8E4B63DE1B17E5E /* Intelligence */,
 				B7A9D35597033294088D0F74 /* Models */,
+				2D2AC9185C7CBE2060EE0464 /* Notifications */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -148,6 +176,7 @@
 		561D69E0F69C3C76BCD203B1 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				959B6E492A6F6EE70009A1E2 /* Assets.xcassets */,
 				A8DC59B9CE15C341640F89ED /* Info.plist */,
 				F5D11480CDABC38A6F47CE04 /* Kairos.entitlements */,
 			);
@@ -190,6 +219,7 @@
 			isa = PBXGroup;
 			children = (
 				72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */,
+				630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -217,6 +247,7 @@
 			isa = PBXGroup;
 			children = (
 				B05BD95988659F3B1C387E9F /* SeedData.swift */,
+				664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -229,6 +260,14 @@
 			path = Health;
 			sourceTree = "<group>";
 		};
+		E2342E3899AA847EA00886C7 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				C3357591E2906E01CB815682 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -237,6 +276,7 @@
 			buildConfigurationList = C0071BF05744CF0FC596843C /* Build configuration list for PBXNativeTarget "Kairos" */;
 			buildPhases = (
 				01314336B9680736F168E2C1 /* Sources */,
+				42CA752220353C8A7A34E72D /* Resources */,
 				24C6A3A072BB8AE0177BCF37 /* Frameworks */,
 			);
 			buildRules = (
@@ -260,6 +300,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					6CD36DBB9B1781513D7A5353 = {
+						DevelopmentTeam = 5Y9SADJQM9;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -283,6 +324,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		42CA752220353C8A7A34E72D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				19627B09651E16118A885449 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		01314336B9680736F168E2C1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -296,12 +348,16 @@
 				BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */,
 				06609779676F65E29F09FEFF /* KairosModels.swift in Sources */,
 				3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */,
+				6D72A5890900286E28E0ECD6 /* NotificationManager.swift in Sources */,
 				2EB77D17CE9743E226BCD191 /* OuraAPIClient.swift in Sources */,
 				C1029FBDD30D1605F932B43C /* OuraManager.swift in Sources */,
 				7A593F55783067B82DB36BD7 /* PulseView.swift in Sources */,
 				40307F763177F607660F7FFA /* ReviewView.swift in Sources */,
 				611068D42F6058A48B70C549 /* SeedData.swift in Sources */,
+				577C85CFAA1EC327C072856B /* SettingsView.swift in Sources */,
 				B0C831A0B764CB84F550DA2B /* TimeMachineView.swift in Sources */,
+				BAC5B10010F3A0EC4CB1D454 /* VoiceRecorder.swift in Sources */,
+				31390F23E6C1994D3EB6B988 /* YearWizardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -379,6 +435,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 5Y9SADJQM9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -457,6 +514,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 5Y9SADJQM9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

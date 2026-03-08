@@ -190,7 +190,7 @@ final class OuraManager: ObservableObject {
         do {
             let token = try await validAccessToken()
             let end   = Date()
-            let start = Calendar.current.date(byAdding: .day, value: -7, to: end) ?? end
+            let start = Calendar.current.date(byAdding: .day, value: -30, to: end) ?? end
             isFetching = true
             fetchError = nil
             snapshot = try await OuraAPIClient(accessToken: token).buildSnapshot(from: start, to: end)

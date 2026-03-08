@@ -27,6 +27,10 @@ struct KairosApp: App {
             AppRootView()
                 .modelContainer(modelContainer)
                 .task { await SeedData.seedIfNeeded(in: modelContainer) }
+                .task {
+                    let granted = await NotificationManager.shared.requestPermission()
+                    if granted { await NotificationManager.shared.scheduleAll() }
+                }
                 .onOpenURL { url in
                     // Handle Oura OAuth callback: kairos://oauth/callback?code=...
                     Task { await OuraManager.shared.handleCallback(url: url) }
@@ -46,9 +50,10 @@ struct KairosApp: App {
 
 struct AppRootView: View {
     @State private var selection: KairosRoute = .dashboard
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
-        NavigationSplitView(columnVisibility: .constant(.all)) {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             KairosSidebar(selection: $selection)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 250)
         } detail: {
@@ -63,11 +68,12 @@ struct AppRootView: View {
     @ViewBuilder
     private func routeView(for route: KairosRoute) -> some View {
         switch route {
-        case .dashboard:        DashboardView()
+        case .dashboard:        DashboardView(navigate: { selection = $0 })
         case .pulse:            PulseView()
         case .review:           ReviewView()
         case .timeMachine:      TimeMachineView()
         case .domain(let name): DomainDetailView(domainName: name)
+        case .settings:         SettingsView()
         }
     }
 }
@@ -80,6 +86,7 @@ enum KairosRoute: Hashable {
     case review
     case timeMachine
     case domain(String)
+    case settings
 }
 
 // MARK: - KairosSidebar
@@ -157,6 +164,13 @@ struct KairosSidebar: View {
             Section("Analysis") {
                 Label("Time Machine", systemImage: "clock.arrow.circlepath")
                     .tag(KairosRoute.timeMachine)
+            }
+            .listRowBackground(Color.clear)
+
+            // MARK: Settings
+            Section {
+                Label("Settings", systemImage: "slider.horizontal.3")
+                    .tag(KairosRoute.settings)
             }
             .listRowBackground(Color.clear)
         }

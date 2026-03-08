@@ -43,6 +43,8 @@
 	<string>Kairos uses the microphone for voice pulse check-ins and monthly review recordings.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Kairos transcribes your voice notes on-device for weekly pulse check-ins.</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

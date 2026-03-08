@@ -9,6 +9,7 @@ struct PulseView: View {
     @State private var energyLevel: Double = 5
     @State private var selectedTags: Set<PulseTag> = []
     @State private var note = ""
+    @State private var recorder = VoiceRecorder()
 
     private var thisWeekPulse: KairosWeeklyPulse? {
         let cal = Calendar.current
@@ -117,29 +118,47 @@ struct PulseView: View {
 
             KairosDivider()
 
-            // Voice placeholder + text note
+            // Voice + text note
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
                 HStack {
-                    KairosLabel(text: "One sentence (optional)")
+                    KairosLabel(text: recorder.state == .recording ? "Listening…" : "One sentence (optional)")
                     Spacer()
-                    // Voice record button (placeholder — AVAudioRecorder integration in next iteration)
+                    if recorder.state == .recording { waveform }
                     Button {
-                        // TODO: AVAudioRecorder
+                        if recorder.state == .idle {
+                            note = ""
+                        }
+                        recorder.toggle()
                     } label: {
-                        Label("Voice", systemImage: "mic.circle")
-                            .font(KairosTheme.Typography.caption)
-                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                        Image(systemName: recorder.state == .recording ? "stop.circle.fill" : "mic.circle")
+                            .font(.title3)
+                            .foregroundStyle(recorder.state == .recording
+                                ? KairosTheme.Colors.status(.blocked)
+                                : KairosTheme.Colors.accent)
+                            .contentTransition(.symbolEffect(.replace))
                     }
                     .buttonStyle(.plain)
                 }
-                TextField("What's on your mind?", text: $note, axis: .vertical)
+                if let err = recorder.permissionError {
+                    Text(err)
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.status(.blocked))
+                }
+                TextField("What's on your mind?", text: noteBinding, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(KairosTheme.Typography.body)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    .lineLimit(3)
+                    .foregroundStyle(recorder.state == .recording
+                        ? KairosTheme.Colors.textSecondary
+                        : KairosTheme.Colors.textPrimary)
+                    .lineLimit(3...)
                     .padding(KairosTheme.Spacing.sm)
                     .background(KairosTheme.Colors.background)
                     .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+                    .onChange(of: recorder.state) { _, newState in
+                        if newState == .idle && !recorder.transcript.isEmpty {
+                            note = recorder.transcript
+                        }
+                    }
             }
 
             KairosDivider()
@@ -187,7 +206,10 @@ struct PulseView: View {
             // List
             VStack(spacing: KairosTheme.Spacing.sm) {
                 ForEach(pulses.prefix(8)) { pulse in
-                    PulseHistoryRow(pulse: pulse)
+                    PulseHistoryRow(pulse: pulse) {
+                        context.delete(pulse)
+                        try? context.save()
+                    }
                 }
             }
         }
@@ -210,6 +232,29 @@ struct PulseView: View {
         .padding(KairosTheme.Spacing.md)
         .background(KairosTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+    }
+
+    // MARK: - Voice Helpers
+
+    private var noteBinding: Binding<String> {
+        Binding(
+            get: { recorder.state == .recording ? recorder.transcript : note },
+            set: { if recorder.state == .idle { note = $0 } }
+        )
+    }
+
+    private var waveform: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<5, id: \.self) { i in
+                let offset = Float(i % 3) * 0.4
+                let h = CGFloat(max(4, (recorder.audioLevel + offset * recorder.audioLevel) * 22))
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(KairosTheme.Colors.status(.blocked))
+                    .frame(width: 3, height: h)
+                    .animation(.easeInOut(duration: 0.12), value: recorder.audioLevel)
+            }
+        }
+        .frame(height: 22)
     }
 
     // MARK: - Helpers
@@ -241,6 +286,7 @@ struct PulseView: View {
         energyLevel = 5
         selectedTags = []
         note = ""
+        recorder.reset()
     }
 }
 
@@ -269,6 +315,8 @@ struct TagToggle: View {
 
 struct PulseHistoryRow: View {
     let pulse: KairosWeeklyPulse
+    var onDelete: (() -> Void)? = nil
+    @State private var isExpanded = false
 
     private static let formatter: DateFormatter = {
         let f = DateFormatter()
@@ -277,42 +325,91 @@ struct PulseHistoryRow: View {
         return f
     }()
 
-    var body: some View {
-        HStack(spacing: KairosTheme.Spacing.md) {
-            Text(String(pulse.energyLevel > 0 ? pulse.energyLevel : 0))
-                .font(KairosTheme.Typography.monoLarge)
-                .foregroundStyle(energyColor)
-                .frame(width: 30)
+    private var hasExpandableContent: Bool {
+        pulse.note.count > 60 || !pulse.transcription.isEmpty
+    }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Self.formatter.string(from: pulse.date))
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textMuted)
-                if !pulse.note.isEmpty {
-                    Text(pulse.note)
-                        .font(KairosTheme.Typography.body)
-                        .foregroundStyle(KairosTheme.Colors.textSecondary)
-                        .lineLimit(1)
-                }
-                if !pulse.tags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(pulse.tags, id: \.self) { tag in
-                            Text(tag.rawValue)
-                                .font(KairosTheme.Typography.monoSmall)
-                                .foregroundStyle(KairosTheme.Colors.textMuted)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(KairosTheme.Colors.surfaceElevated)
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Collapsed row
+            HStack(spacing: KairosTheme.Spacing.md) {
+                Text(String(pulse.energyLevel > 0 ? pulse.energyLevel : 0))
+                    .font(KairosTheme.Typography.monoLarge)
+                    .foregroundStyle(energyColor)
+                    .frame(width: 30)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Self.formatter.string(from: pulse.date))
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                    if !pulse.note.isEmpty {
+                        Text(pulse.note)
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.textSecondary)
+                            .lineLimit(isExpanded ? nil : 1)
+                    }
+                    if !pulse.tags.isEmpty {
+                        HStack(spacing: 4) {
+                            ForEach(pulse.tags, id: \.self) { tag in
+                                Text(tag.rawValue)
+                                    .font(KairosTheme.Typography.monoSmall)
+                                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1)
+                                    .background(KairosTheme.Colors.surfaceElevated)
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                            }
                         }
                     }
                 }
+                Spacer()
+                // Inline trash — always visible
+                if let onDelete {
+                    Button { onDelete() } label: {
+                        Image(systemName: "trash")
+                            .font(.caption2)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete pulse")
+                }
+                if hasExpandableContent {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
             }
-            Spacer()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if hasExpandableContent {
+                    withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
+                }
+            }
+
+            // Expanded: full transcription if different from note
+            if isExpanded && !pulse.transcription.isEmpty && pulse.transcription != pulse.note {
+                KairosDivider()
+                    .padding(.vertical, KairosTheme.Spacing.xs)
+                VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
+                    KairosLabel(text: "Voice transcription")
+                    Text(pulse.transcription)
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .padding(KairosTheme.Spacing.sm)
         .background(KairosTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+        .animation(.easeInOut(duration: 0.15), value: isExpanded)
+        .contextMenu {
+            if let onDelete {
+                Button(role: .destructive) { onDelete() } label: {
+                    Label("Delete Pulse", systemImage: "trash")
+                }
+            }
+        }
     }
 
     private var energyColor: Color {

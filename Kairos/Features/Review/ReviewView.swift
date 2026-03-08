@@ -33,6 +33,7 @@ struct ReviewView: View {
     @State private var inputText = ""
     @State private var isThinking = false
     @State private var streamingResponse = ""
+    @State private var selectedReview: KairosMonthlyReview?
 
     private var currentMonthReview: KairosMonthlyReview? {
         let cal = Calendar.current
@@ -72,6 +73,9 @@ struct ReviewView: View {
             }
         }
         .background(KairosTheme.Colors.background)
+        .sheet(item: $selectedReview) { review in
+            ReviewTranscriptSheet(review: review)
+        }
     }
 
     // MARK: - Overview
@@ -294,23 +298,14 @@ struct ReviewView: View {
                         // Commentary
                         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
                             KairosLabel(text: "Commentary")
-                            ZStack(alignment: .topLeading) {
-                                if currentComment.isEmpty {
-                                    Text("What happened? What blocked you? Any wins?")
-                                        .font(KairosTheme.Typography.body)
-                                        .foregroundStyle(KairosTheme.Colors.textMuted)
-                                        .padding(.top, 8).padding(.leading, 4)
-                                        .allowsHitTesting(false)
-                                }
-                                TextEditor(text: Binding(
-                                    get: { pendingCommentaries[kr.id] ?? kr.latestCommentary },
-                                    set: { pendingCommentaries[kr.id] = $0 }
-                                ))
-                                .font(KairosTheme.Typography.body)
-                                .foregroundStyle(KairosTheme.Colors.textPrimary)
-                                .scrollContentBackground(.hidden)
-                                .frame(minHeight: 100)
-                            }
+                            TextField("What happened? What blocked you? Any wins?", text: Binding(
+                                get: { pendingCommentaries[kr.id] ?? kr.latestCommentary },
+                                set: { pendingCommentaries[kr.id] = $0 }
+                            ), axis: .vertical)
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.textPrimary)
+                            .textFieldStyle(.plain)
+                            .lineLimit(4...)
                             .padding(KairosTheme.Spacing.sm)
                             .background(KairosTheme.Colors.surface)
                             .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
@@ -489,7 +484,23 @@ struct ReviewView: View {
                 KairosLabel(text: "Past Reviews")
                     .padding(.horizontal, KairosTheme.Spacing.md)
                     .padding(.top, KairosTheme.Spacing.xl)
-                ForEach(reviews) { review in PastReviewRow(review: review) }
+                ForEach(reviews) { review in
+                    Button { selectedReview = review } label: {
+                        PastReviewRow(review: review) {
+                            context.delete(review)
+                            try? context.save()
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            context.delete(review)
+                            try? context.save()
+                        } label: {
+                            Label("Delete Review", systemImage: "trash")
+                        }
+                    }
+                }
             }
         }
         .background(KairosTheme.Colors.surface)
@@ -809,10 +820,63 @@ struct ChatBubble: View {
     }
 }
 
+// MARK: - ReviewTranscriptSheet
+
+struct ReviewTranscriptSheet: View {
+    let review: KairosMonthlyReview
+    @Environment(\.dismiss) private var dismiss
+
+    private static let formatter: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMMM yyyy"; return f
+    }()
+
+    private var monthString: String {
+        let c = DateComponents(year: review.year, month: review.month, day: 1)
+        guard let date = Calendar.current.date(from: c) else { return "\(review.month)/\(review.year)" }
+        return Self.formatter.string(from: date)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    KairosLabel(text: "Monthly Review")
+                    Text(monthString)
+                        .font(KairosTheme.Typography.displayMedium)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                }
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.body)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(KairosTheme.Spacing.xl)
+
+            KairosDivider()
+
+            ScrollView {
+                Text(review.transcript.isEmpty ? "No transcript recorded." : review.transcript)
+                    .font(KairosTheme.Typography.body)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                    .padding(KairosTheme.Spacing.xl)
+            }
+        }
+        .background(KairosTheme.Colors.background)
+        .frame(minWidth: 600, minHeight: 400)
+    }
+}
+
 // MARK: - PastReviewRow
 
 struct PastReviewRow: View {
     let review: KairosMonthlyReview
+    var onDelete: (() -> Void)? = nil
+
     private static let formatter: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "MMM yyyy"; return f
     }()
@@ -822,15 +886,28 @@ struct PastReviewRow: View {
         return Self.formatter.string(from: date)
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
-            Text(monthString)
-                .font(KairosTheme.Typography.mono)
-                .foregroundStyle(KairosTheme.Colors.textSecondary)
-            if let point = review.summaryPoints.first {
-                Text(point)
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textMuted)
-                    .lineLimit(2)
+        HStack(alignment: .top, spacing: KairosTheme.Spacing.xs) {
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
+                Text(monthString)
+                    .font(KairosTheme.Typography.mono)
+                    .foregroundStyle(KairosTheme.Colors.textSecondary)
+                if !review.transcript.isEmpty {
+                    Text(review.transcript)
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .lineLimit(2)
+                }
+            }
+            Spacer()
+            // Inline trash — always visible
+            if let onDelete {
+                Button { onDelete() } label: {
+                    Image(systemName: "trash")
+                        .font(.caption2)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                .buttonStyle(.plain)
+                .help("Delete review")
             }
         }
         .padding(KairosTheme.Spacing.sm)

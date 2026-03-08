@@ -14,8 +14,8 @@ enum KairosTheme {
         static let borderSubtle    = Color(hex: "#1C1C28")
 
         static let textPrimary   = Color.white
-        static let textSecondary = Color(hex: "#8888AA")
-        static let textMuted     = Color(hex: "#55556A")
+        static let textSecondary = Color(hex: "#9A9ABB")
+        static let textMuted     = Color(hex: "#6A6A85")
 
         static let accent       = Color(hex: "#A8A8FF")
         static let accentSubtle = Color(hex: "#A8A8FF").opacity(0.12)
@@ -48,15 +48,15 @@ enum KairosTheme {
     // MARK: - Typography
 
     enum Typography {
-        static let displayLarge  = Font.system(size: 32, weight: .bold,     design: .default)
-        static let displayMedium = Font.system(size: 22, weight: .semibold, design: .default)
-        static let headline      = Font.system(size: 15, weight: .semibold, design: .default)
-        static let body          = Font.system(size: 13, weight: .regular,  design: .default)
-        static let caption       = Font.system(size: 11, weight: .regular,  design: .default)
-        static let monoLarge     = Font.system(size: 22, weight: .medium,   design: .monospaced)
-        static let mono          = Font.system(size: 13, weight: .regular,  design: .monospaced)
-        static let monoSmall     = Font.system(size: 10, weight: .regular,  design: .monospaced)
-        static let label         = Font.system(size: 10, weight: .medium,   design: .default)
+        static let displayLarge  = Font.system(size: 34, weight: .bold,     design: .default)
+        static let displayMedium = Font.system(size: 24, weight: .semibold, design: .default)
+        static let headline      = Font.system(size: 16, weight: .semibold, design: .default)
+        static let body          = Font.system(size: 14, weight: .regular,  design: .default)
+        static let caption       = Font.system(size: 12, weight: .regular,  design: .default)
+        static let monoLarge     = Font.system(size: 24, weight: .medium,   design: .monospaced)
+        static let mono          = Font.system(size: 14, weight: .regular,  design: .monospaced)
+        static let monoSmall     = Font.system(size: 11, weight: .regular,  design: .monospaced)
+        static let label         = Font.system(size: 11, weight: .medium,   design: .default)
     }
 
     // MARK: - Spacing

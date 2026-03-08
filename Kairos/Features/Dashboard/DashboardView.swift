@@ -28,10 +28,21 @@ struct KRDrop: Codable, Transferable {
 // MARK: - DashboardView
 
 struct DashboardView: View {
+    /// Called when the user taps a domain tile — parent updates sidebar selection
+    var navigate: (KairosRoute) -> Void = { _ in }
+
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @Query private var allKeyResults: [KairosKeyResult]
+    @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
+
     @State private var selectedYear = 2026
+    @State private var showingWizard = false
+
+    // AI year summary
+    @ObservedObject private var intelligence = IntelligenceManager.shared
+    @State private var yearSummary: String?
+    @State private var isSummaryLoading = false
 
     private var currentYear: KairosYear? { years.first { $0.year == selectedYear } }
 
@@ -56,6 +67,50 @@ struct DashboardView: View {
             .padding(KairosTheme.Spacing.xl)
         }
         .background(KairosTheme.Colors.background)
+        .sheet(isPresented: $showingWizard) { YearWizardView() }
+        .task(id: selectedYear) {
+            guard let year = currentYear else { return }
+            await generateYearSummary(for: year)
+        }
+    }
+
+    // MARK: - AI Summary
+
+    private func generateYearSummary(for year: KairosYear) async {
+        let fallback = computedSummary(for: year)
+
+        guard intelligence.isUsingAI else {
+            yearSummary = fallback
+            return
+        }
+
+        isSummaryLoading = true
+        yearSummary = nil
+        let ctx = intelligence.buildContext(
+            from: year,
+            pulses: Array(pulses.prefix(4))
+        )
+        let prompt = """
+        In exactly one sentence (max 18 words), what is the single sharpest insight about this \
+        person's year so far? Be specific, not generic.
+        """
+        do {
+            yearSummary = try await intelligence.engine.complete(prompt: prompt, context: ctx)
+        } catch {
+            yearSummary = fallback
+        }
+        isSummaryLoading = false
+    }
+
+    private func computedSummary(for year: KairosYear) -> String {
+        let pct      = Int(year.overallProgress * 100)
+        let onTrack  = year.sortedDomains.filter { $0.progress >= 0.5 }.count
+        let total    = year.sortedDomains.count
+        let blocked  = year.allKeyResults.filter { $0.currentStatus == .blocked }.count
+        var parts: [String] = ["\(pct)% complete"]
+        if total > 0 { parts.append("\(onTrack)/\(total) domains on track") }
+        if blocked > 0 { parts.append("\(blocked) KRs blocked") }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Header
@@ -67,6 +122,7 @@ struct DashboardView: View {
                     ForEach(years.prefix(3), id: \.id) { y in
                         Button {
                             selectedYear = y.year
+                            yearSummary = nil
                         } label: {
                             Text(String(y.year))
                                 .font(KairosTheme.Typography.mono)
@@ -93,12 +149,37 @@ struct DashboardView: View {
                         .foregroundStyle(KairosTheme.Colors.textPrimary)
                         .italic()
                 }
+                // AI year summary
+                if let summary = yearSummary {
+                    Text(summary)
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.accent.opacity(0.9))
+                        .italic()
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                } else if isSummaryLoading {
+                    Text("Analyzing…")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .italic()
+                }
             }
             Spacer()
-            Text(monthLabel)
-                .font(KairosTheme.Typography.mono)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
+            HStack(spacing: KairosTheme.Spacing.sm) {
+                Text(monthLabel)
+                    .font(KairosTheme.Typography.mono)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                Button {
+                    showingWizard = true
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                .buttonStyle(.plain)
+                .help("Set up a new year")
+            }
         }
+        .animation(.easeInOut(duration: 0.3), value: yearSummary)
     }
 
     private var monthLabel: String {
@@ -193,6 +274,9 @@ struct DashboardView: View {
                     },
                     onReceiveKR: { krID in
                         moveKR(id: krID, toDomain: domain)
+                    },
+                    onTap: {
+                        navigate(.domain(domain.name))
                     }
                 )
             }
@@ -227,12 +311,27 @@ struct DashboardView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: KairosTheme.Spacing.md) {
-            Text("No data for \(selectedYear)")
+        VStack(spacing: KairosTheme.Spacing.lg) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 36))
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+            Text("\(selectedYear) isn't set up yet")
                 .font(KairosTheme.Typography.headline)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
+            Button {
+                showingWizard = true
+            } label: {
+                Label("Set up \(selectedYear)", systemImage: "sparkles")
+                    .font(KairosTheme.Typography.headline)
+                    .foregroundStyle(KairosTheme.Colors.background)
+                    .padding(.horizontal, KairosTheme.Spacing.lg)
+                    .padding(.vertical, KairosTheme.Spacing.sm)
+                    .background(KairosTheme.Colors.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+            }
+            .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity, minHeight: 200)
+        .frame(maxWidth: .infinity, minHeight: 240)
     }
 }
 
@@ -242,6 +341,8 @@ struct DomainCard: View {
     let domain: KairosDomain
     let onSwap: (String, String) -> Void
     let onReceiveKR: (String) -> Void
+    var onTap: (() -> Void)? = nil
+
     @State private var isHovered = false
     @State private var isDropTarget = false
 
@@ -307,7 +408,7 @@ struct DomainCard: View {
             RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
                 .stroke(
                     isDropTarget ? KairosTheme.Colors.accent :
-                    (isHovered ? domainColor.opacity(0.4) : KairosTheme.Colors.border),
+                    (isHovered ? domainColor.opacity(0.5) : KairosTheme.Colors.border),
                     lineWidth: isDropTarget ? 2 : 1
                 )
         )
@@ -315,6 +416,8 @@ struct DomainCard: View {
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .animation(.easeInOut(duration: 0.12), value: isDropTarget)
         .onHover { isHovered = $0 }
+        .contentShape(Rectangle())
+        .onTapGesture { onTap?() }
         // Domain card reorder — drag this card
         .draggable(DomainDrop(domainName: domain.name)) {
             HStack(spacing: 6) {

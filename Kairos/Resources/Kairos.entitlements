@@ -8,5 +8,7 @@
 	<array/>
 	<key>com.apple.security.personal-information.health</key>
 	<true/>
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
 </dict>
 </plist>

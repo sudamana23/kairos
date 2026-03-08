@@ -17,7 +17,7 @@ struct HealthPanel: View {
 
     // Prefer Oura; fall back to HealthKit
     private var activeSnapshot: HealthSnapshot? { oura.snapshot ?? hk.snapshot }
-    private var panelTitle: String { oura.snapshot != nil ? "Oura · 7-Day Signal" : "Body · 7-Day Signal" }
+    private var panelTitle: String { oura.snapshot != nil ? "Oura · 30-Day Signal" : "Body · 30-Day Signal" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
@@ -357,7 +357,7 @@ struct HealthPanel: View {
                 MetricTile(
                     label: "Sleep Avg",
                     value: snap.avgSleepHours.map { formatHours($0) } ?? "—",
-                    unit: "7-day",
+                    unit: "30-day",
                     trend: nil,
                     highlight: sleepHighlight(snap.avgSleepHours)
                 )
