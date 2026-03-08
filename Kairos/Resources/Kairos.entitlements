@@ -5,18 +5,14 @@
 	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>com.apple.developer.healthkit.access</key>
-	<array/>
-	<key>com.apple.security.personal-information.health</key>
+	<array>
+		<string>health-records</string>
+	</array>
+	<key>com.apple.developer.healthkit.background-delivery</key>
 	<true/>
 	<key>com.apple.security.device.audio-input</key>
 	<true/>
-	<key>com.apple.developer.icloud-services</key>
-	<array>
-		<string>CloudKit</string>
-	</array>
-	<key>com.apple.developer.icloud-container-identifiers</key>
-	<array>
-		<string>iCloud.com.damianspendel.kairos</string>
-	</array>
+	<key>com.apple.security.personal-information.health</key>
+	<true/>
 </dict>
 </plist>

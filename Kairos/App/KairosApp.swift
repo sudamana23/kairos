@@ -16,10 +16,12 @@ struct KairosApp: App {
             KairosMonthlyReview.self
         ])
         do {
-            let cloudConfig = ModelConfiguration(
-                cloudKitDatabase: .private("iCloud.com.damianspendel.kairos")
-            )
-            modelContainer = try ModelContainer(for: schema, configurations: cloudConfig)
+            // TODO(icloud): uncomment when Apple Developer Program is active
+            // let cloudConfig = ModelConfiguration(
+            //     cloudKitDatabase: .private("iCloud.com.damianspendel.kairos")
+            // )
+            // modelContainer = try ModelContainer(for: schema, configurations: cloudConfig)
+            modelContainer = try ModelContainer(for: schema)
         } catch {
             fatalError("Kairos: failed to create ModelContainer — \(error)")
         }
