@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -12,6 +13,13 @@ struct SettingsView: View {
     @State private var notificationsAuthorized = false
     @State private var pulseNotifEnabled = true
     @State private var reviewNotifEnabled = true
+
+    // Export / Import
+    @State private var exportDocument  = KairosBackupDocument()
+    @State private var showExporter    = false
+    @State private var showImporter    = false
+    @State private var importAlertMsg: String?
+    @State private var showImportAlert = false
 
     var body: some View {
         ScrollView {
@@ -62,6 +70,76 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This permanently deletes all years, domains, objectives, key results, pulses, and reviews.")
+        }
+        // MARK: File Exporter
+        .fileExporter(
+            isPresented: $showExporter,
+            document: exportDocument,
+            contentType: .json,
+            defaultFilename: exportFilename
+        ) { result in
+            if case .failure(let error) = result {
+                importAlertMsg = "Export failed: \(error.localizedDescription)"
+                showImportAlert = true
+            }
+        }
+        // MARK: File Importer
+        .fileImporter(
+            isPresented: $showImporter,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .failure(let error):
+                importAlertMsg = "Could not open file: \(error.localizedDescription)"
+                showImportAlert = true
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                performImport(from: url)
+            }
+        }
+        // MARK: Import result / error alert
+        .alert("Import", isPresented: $showImportAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importAlertMsg ?? "")
+        }
+    }
+
+    // MARK: - Export helpers
+
+    private var exportFilename: String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+        return "kairos-backup-\(f.string(from: Date()))"
+    }
+
+    private func triggerExport() {
+        do {
+            let data = try KairosExportManager.makeBackupData(years: years, context: modelContext)
+            exportDocument = KairosBackupDocument(data: data)
+            showExporter   = true
+        } catch {
+            importAlertMsg  = error.localizedDescription
+            showImportAlert = true
+        }
+    }
+
+    private func performImport(from url: URL) {
+        guard url.startAccessingSecurityScopedResource() else {
+            importAlertMsg  = "Permission denied for this file."
+            showImportAlert = true
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        do {
+            let data   = try Data(contentsOf: url)
+            let result = try KairosExportManager.importBackup(from: data, into: modelContext)
+            importAlertMsg  = result.summary
+            showImportAlert = true
+        } catch {
+            importAlertMsg  = error.localizedDescription
+            showImportAlert = true
         }
     }
 
@@ -190,10 +268,55 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
                 dataStatsRow
+
                 KairosDivider()
-                Button {
-                    showResetConfirmation = true
-                } label: {
+
+                // Export
+                Button { triggerExport() } label: {
+                    HStack {
+                        Image(systemName: "arrow.up.doc")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Export Backup")
+                                .font(KairosTheme.Typography.body)
+                                .foregroundStyle(KairosTheme.Colors.textPrimary)
+                            Text("Saves a JSON file with all years, pulses, and reviews")
+                                .font(KairosTheme.Typography.caption)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                KairosDivider()
+
+                // Import
+                Button { showImporter = true } label: {
+                    HStack {
+                        Image(systemName: "arrow.down.doc")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Import Backup")
+                                .font(KairosTheme.Typography.body)
+                                .foregroundStyle(KairosTheme.Colors.textPrimary)
+                            Text("Merges a .json backup — existing items are skipped")
+                                .font(KairosTheme.Typography.caption)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                KairosDivider()
+
+                // Reset
+                Button { showResetConfirmation = true } label: {
                     HStack {
                         Image(systemName: "trash")
                         Text("Reset All Data")
