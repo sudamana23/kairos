@@ -79,25 +79,34 @@ struct DashboardView: View {
     private func generateYearSummary(for year: KairosYear) async {
         let fallback = computedSummary(for: year)
 
+        // Show stored summary if it was generated this calendar month
+        let now = Date()
+        let currentMonthKey = Calendar.current.component(.year, from: now) * 100
+                            + Calendar.current.component(.month, from: now)
+        if !year.aiSummary.isEmpty && year.aiSummaryGeneratedMonth == currentMonthKey {
+            yearSummary = year.aiSummary
+            return
+        }
+
         guard intelligence.isUsingAI else {
             yearSummary = fallback
             return
         }
 
         isSummaryLoading = true
-        yearSummary = nil
-        let ctx = intelligence.buildContext(
-            from: year,
-            pulses: Array(pulses.prefix(4))
-        )
+        yearSummary = year.aiSummary.isEmpty ? nil : year.aiSummary   // show stale while loading
+        let ctx = intelligence.buildContext(from: year, pulses: Array(pulses.prefix(4)))
         let prompt = """
         In exactly one sentence (max 18 words), what is the single sharpest insight about this \
         person's year so far? Be specific, not generic.
         """
         do {
-            yearSummary = try await intelligence.engine.complete(prompt: prompt, context: ctx)
+            let result = try await intelligence.engine.complete(prompt: prompt, context: ctx)
+            year.aiSummary = result
+            year.aiSummaryGeneratedMonth = currentMonthKey
+            yearSummary = result
         } catch {
-            yearSummary = fallback
+            yearSummary = year.aiSummary.isEmpty ? fallback : year.aiSummary
         }
         isSummaryLoading = false
     }
@@ -315,13 +324,13 @@ struct DashboardView: View {
             Image(systemName: "calendar.badge.plus")
                 .font(.system(size: 36))
                 .foregroundStyle(KairosTheme.Colors.textMuted)
-            Text("\(selectedYear) isn't set up yet")
+            Text(verbatim: "\(selectedYear) isn't set up yet")
                 .font(KairosTheme.Typography.headline)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
             Button {
                 showingWizard = true
             } label: {
-                Label("Set up \(selectedYear)", systemImage: "sparkles")
+                Label(String("Set up \(selectedYear)"), systemImage: "sparkles")
                     .font(KairosTheme.Typography.headline)
                     .foregroundStyle(KairosTheme.Colors.background)
                     .padding(.horizontal, KairosTheme.Spacing.lg)

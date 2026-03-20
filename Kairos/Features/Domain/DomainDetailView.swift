@@ -87,7 +87,7 @@ struct DomainDetailView: View {
                     },
                     onMoveKRToObjective: { kr, obj in kr.objective = obj },
                     onDelete: {
-                        modelContext.delete(objective)
+                        objective.deleteWithChildren(in: modelContext)
                         try? modelContext.save()
                     },
                     onAddKR: {
@@ -496,7 +496,7 @@ struct KeyResultRow: View {
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
-                modelContext.delete(kr)
+                kr.deleteWithChildren(in: modelContext)
                 try? modelContext.save()
             }
             Button("Cancel", role: .cancel) {}

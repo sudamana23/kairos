@@ -435,7 +435,12 @@ struct ReviewView: View {
                         if isThinking || !streamingResponse.isEmpty {
                             ChatBubble(message: ChatMessage(
                                 role: .ai, persona: .witness,
-                                content: streamingResponse.isEmpty ? "…" : streamingResponse
+                                content: streamingResponse.isEmpty ? "…" : (
+                                    streamingResponse
+                                        .components(separatedBy: "\nUser:").first?
+                                        .components(separatedBy: "\nCouncil:").first?
+                                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                                    ?? streamingResponse)
                             ))
                             .id("streaming")
                         }
@@ -605,7 +610,15 @@ struct ReviewView: View {
                     await MainActor.run { streamingResponse += chunk }
                 }
                 await MainActor.run {
-                    transcript.append(ChatMessage(role: .ai, persona: persona, content: streamingResponse))
+                    // Strip any hallucinated "User:" or "Council:" continuation turns
+                    let cleaned = streamingResponse
+                        .components(separatedBy: "\nUser:")
+                        .first?
+                        .components(separatedBy: "\nCouncil:")
+                        .first?
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        ?? streamingResponse
+                    transcript.append(ChatMessage(role: .ai, persona: persona, content: cleaned))
                     streamingResponse = ""
                     isThinking = false
                 }
@@ -621,7 +634,11 @@ struct ReviewView: View {
 
     private func buildPrompt(userMessage: String) -> String {
         let history = transcript.suffix(6).map { "\($0.role == .user ? "User" : "Council"): \($0.content)" }.joined(separator: "\n")
-        return "\(history)\nUser: \(userMessage)\nCouncil:"
+        return """
+        \(history)
+        User: \(userMessage)
+        Council (respond ONLY with your single reply — do not write any further "User:" or "Council:" turns):
+        """
     }
 
     private func nextPersona() -> AIPersona {
@@ -639,6 +656,12 @@ struct ReviewView: View {
             .map { "\($0.role == .user ? "You" : $0.persona?.rawValue ?? "Council"): \($0.content)" }
             .joined(separator: "\n\n")
         context.insert(review)
+
+        // Invalidate the cached AI year summary so the dashboard regenerates it after this review
+        if let year = currentYear {
+            year.aiSummaryGeneratedMonth = 0
+        }
+
         try? context.save()
         withAnimation { phase = .overview }
     }

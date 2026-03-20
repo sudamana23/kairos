@@ -10,8 +10,14 @@ struct TimeMachineView: View {
 
     private let monthAbbrs = ["J","F","M","A","M","J","J","A","S","O","N","D"]
 
+    /// Deduplicated years — guards against CloudKit delivering multiple objects for the same year.
+    private var uniqueYears: [KairosYear] {
+        var seen = Set<Int>()
+        return years.filter { seen.insert($0.year).inserted }
+    }
+
     private var currentYear: KairosYear? {
-        years.first { $0.year == selectedYear }
+        uniqueYears.first { $0.year == selectedYear }
     }
 
     var body: some View {
@@ -19,14 +25,14 @@ struct TimeMachineView: View {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xl) {
                 header
                 if let year = currentYear {
-                    if years.count > 1 { yearPicker }
+                    if uniqueYears.count > 1 { yearPicker }
                     yearProgressSection(year)
                     if !selectedDomain.isEmpty {
                         domainPicker(year)
                         monthlyHeatmap(year)
                         krStatusTable(year)
                     }
-                    if years.count >= 2 { crossYearSection }
+                    if uniqueYears.count >= 2 { crossYearSection }
                 } else {
                     emptyState
                 }
@@ -106,7 +112,7 @@ struct TimeMachineView: View {
 
     private var yearPicker: some View {
         HStack(spacing: KairosTheme.Spacing.sm) {
-            ForEach(years) { y in
+            ForEach(uniqueYears) { y in
                 Button { selectedYear = y.year } label: {
                     Text(String(y.year))
                         .font(KairosTheme.Typography.mono)
@@ -355,7 +361,7 @@ struct TimeMachineView: View {
             }
 
             // Year rows
-            ForEach(years) { year in
+            ForEach(uniqueYears) { year in
                 if let domain = year.domains.first(where: { $0.name == selectedDomain }) {
                     HStack(spacing: 2) {
                         Text(String(year.year))

@@ -5,18 +5,31 @@ import SwiftData
 
 @Model
 final class KairosYear {
-    var id: UUID
-    var year: Int
-    var intention: String
+    var id: UUID = UUID()
+    var year: Int = 0
+    var intention: String = ""
+    /// AI-generated one-sentence insight, refreshed once per month after a monthly review.
+    var aiSummary: String = ""
+    /// The year+month (e.g. 202603) when aiSummary was last generated.
+    var aiSummaryGeneratedMonth: Int = 0
 
-    @Relationship(deleteRule: .cascade, inverse: \KairosDomain.year)
-    var domains: [KairosDomain]
+    // CloudKit requires to-many relationships to be optional ([T]?).
+    // The computed `domains` wrapper keeps the public API non-optional.
+    @Relationship(deleteRule: .nullify, inverse: \KairosDomain.year)
+    private var _domains: [KairosDomain]? = nil
+    var domains: [KairosDomain] {
+        get { _domains ?? [] }
+        set { _domains = newValue }
+    }
 
     init(year: Int, intention: String = "") {
-        self.id = UUID()
         self.year = year
         self.intention = intention
-        self.domains = []
+    }
+
+    func deleteWithChildren(in context: ModelContext) {
+        for domain in domains { domain.deleteWithChildren(in: context) }
+        context.delete(self)
     }
 
     var sortedDomains: [KairosDomain] {
@@ -38,26 +51,33 @@ final class KairosYear {
 
 @Model
 final class KairosDomain {
-    var id: UUID
-    var name: String
-    var emoji: String
-    var identityStatement: String
-    var sortOrder: Int
-    var colorHex: String
+    var id: UUID = UUID()
+    var name: String = ""
+    var emoji: String = ""
+    var identityStatement: String = ""
+    var sortOrder: Int = 0
+    var colorHex: String = ""
 
     var year: KairosYear?
 
-    @Relationship(deleteRule: .cascade, inverse: \KairosObjective.domain)
-    var objectives: [KairosObjective]
+    @Relationship(deleteRule: .nullify, inverse: \KairosObjective.domain)
+    private var _objectives: [KairosObjective]? = nil
+    var objectives: [KairosObjective] {
+        get { _objectives ?? [] }
+        set { _objectives = newValue }
+    }
 
     init(name: String, emoji: String, identityStatement: String = "", sortOrder: Int, colorHex: String) {
-        self.id = UUID()
         self.name = name
         self.emoji = emoji
         self.identityStatement = identityStatement
         self.sortOrder = sortOrder
         self.colorHex = colorHex
-        self.objectives = []
+    }
+
+    func deleteWithChildren(in context: ModelContext) {
+        for objective in objectives { objective.deleteWithChildren(in: context) }
+        context.delete(self)
     }
 
     var sortedObjectives: [KairosObjective] {
@@ -83,20 +103,27 @@ final class KairosDomain {
 
 @Model
 final class KairosObjective {
-    var id: UUID
-    var title: String
-    var sortOrder: Int
+    var id: UUID = UUID()
+    var title: String = ""
+    var sortOrder: Int = 0
 
     var domain: KairosDomain?
 
-    @Relationship(deleteRule: .cascade, inverse: \KairosKeyResult.objective)
-    var keyResults: [KairosKeyResult]
+    @Relationship(deleteRule: .nullify, inverse: \KairosKeyResult.objective)
+    private var _keyResults: [KairosKeyResult]? = nil
+    var keyResults: [KairosKeyResult] {
+        get { _keyResults ?? [] }
+        set { _keyResults = newValue }
+    }
 
     init(title: String, sortOrder: Int = 0) {
-        self.id = UUID()
         self.title = title
         self.sortOrder = sortOrder
-        self.keyResults = []
+    }
+
+    func deleteWithChildren(in context: ModelContext) {
+        for kr in keyResults { kr.deleteWithChildren(in: context) }
+        context.delete(self)
     }
 
     var sortedKeyResults: [KairosKeyResult] {
@@ -108,20 +135,27 @@ final class KairosObjective {
 
 @Model
 final class KairosKeyResult {
-    var id: UUID
-    var title: String
-    var sortOrder: Int
+    var id: UUID = UUID()
+    var title: String = ""
+    var sortOrder: Int = 0
 
     var objective: KairosObjective?
 
-    @Relationship(deleteRule: .cascade, inverse: \KairosMonthlyEntry.keyResult)
-    var entries: [KairosMonthlyEntry]
+    @Relationship(deleteRule: .nullify, inverse: \KairosMonthlyEntry.keyResult)
+    private var _entries: [KairosMonthlyEntry]? = nil
+    var entries: [KairosMonthlyEntry] {
+        get { _entries ?? [] }
+        set { _entries = newValue }
+    }
 
     init(title: String, sortOrder: Int = 0) {
-        self.id = UUID()
         self.title = title
         self.sortOrder = sortOrder
-        self.entries = []
+    }
+
+    func deleteWithChildren(in context: ModelContext) {
+        for entry in entries { context.delete(entry) }
+        context.delete(self)
     }
 
     var latestEntry: KairosMonthlyEntry? {
@@ -145,17 +179,16 @@ final class KairosKeyResult {
 
 @Model
 final class KairosMonthlyEntry {
-    var id: UUID
-    var year: Int
-    var month: Int
-    var statusRaw: String
-    var rating: Int
-    var commentary: String
+    var id: UUID = UUID()
+    var year: Int = 0
+    var month: Int = 0
+    var statusRaw: String = KRStatus.notStarted.rawValue
+    var rating: Int = 0
+    var commentary: String = ""
 
     var keyResult: KairosKeyResult?
 
     init(year: Int, month: Int, status: KRStatus = .notStarted, rating: Int = 0, commentary: String = "") {
-        self.id = UUID()
         self.year = year
         self.month = month
         self.statusRaw = status.rawValue
@@ -173,24 +206,17 @@ final class KairosMonthlyEntry {
 
 @Model
 final class KairosWeeklyPulse {
-    var id: UUID
-    var date: Date
-    var energyLevel: Int
-    var tagsRaw: String
-    var transcription: String
-    var note: String
-    var sentimentScore: Double
-    var audioFileName: String
+    var id: UUID = UUID()
+    var date: Date = Date()
+    var energyLevel: Int = 0
+    var tagsRaw: String = "[]"
+    var transcription: String = ""
+    var note: String = ""
+    var sentimentScore: Double = 0
+    var audioFileName: String = ""
 
     init(date: Date = Date()) {
-        self.id = UUID()
         self.date = date
-        self.energyLevel = 0
-        self.tagsRaw = "[]"
-        self.transcription = ""
-        self.note = ""
-        self.sentimentScore = 0
-        self.audioFileName = ""
     }
 
     var tags: [PulseTag] {
@@ -213,26 +239,19 @@ final class KairosWeeklyPulse {
 
 @Model
 final class KairosMonthlyReview {
-    var id: UUID
-    var year: Int
-    var month: Int
-    var transcript: String
-    var summaryPoint1: String
-    var summaryPoint2: String
-    var summaryPoint3: String
-    var audioFileName: String
-    var createdAt: Date
+    var id: UUID = UUID()
+    var year: Int = 0
+    var month: Int = 0
+    var transcript: String = ""
+    var summaryPoint1: String = ""
+    var summaryPoint2: String = ""
+    var summaryPoint3: String = ""
+    var audioFileName: String = ""
+    var createdAt: Date = Date()
 
     init(year: Int, month: Int) {
-        self.id = UUID()
         self.year = year
         self.month = month
-        self.transcript = ""
-        self.summaryPoint1 = ""
-        self.summaryPoint2 = ""
-        self.summaryPoint3 = ""
-        self.audioFileName = ""
-        self.createdAt = Date()
     }
 
     var summaryPoints: [String] {
@@ -261,7 +280,6 @@ enum KRStatus: String, CaseIterable, Codable {
         }
     }
 
-    /// Weighted score contribution (0–1) for progress calculation
     var weight: Double {
         switch self {
         case .notStarted:  return 0.0

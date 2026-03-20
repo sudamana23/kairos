@@ -1,5 +1,7 @@
 import SwiftUI
+#if os(iOS)
 import HealthKit
+#endif
 
 // MARK: - HealthPanel
 // Shows 7-day physiological snapshot.

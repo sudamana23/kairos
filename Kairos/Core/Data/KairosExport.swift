@@ -242,6 +242,19 @@ enum KairosExportManager {
         }
     }
 
+    // MARK: Delete all (used by onboarding replace-import)
+
+    static func deleteAllData(in context: ModelContext) throws {
+        try context.delete(model: KairosMonthlyEntry.self)
+        try context.delete(model: KairosKeyResult.self)
+        try context.delete(model: KairosObjective.self)
+        try context.delete(model: KairosDomain.self)
+        try context.delete(model: KairosYear.self)
+        try context.delete(model: KairosWeeklyPulse.self)
+        try context.delete(model: KairosMonthlyReview.self)
+        try context.save()
+    }
+
     // MARK: Import (merge by UUID — safe to run multiple times)
 
     /// Restore a backup, skipping any objects whose UUID already exists in the store.

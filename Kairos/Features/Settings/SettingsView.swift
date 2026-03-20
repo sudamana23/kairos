@@ -38,7 +38,7 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Year & All Data", role: .destructive) {
-                if let y = yearToDelete { modelContext.delete(y); try? modelContext.save() }
+                if let y = yearToDelete { y.deleteWithChildren(in: modelContext); try? modelContext.save() }
                 yearToDelete = nil
             }
             Button("Cancel", role: .cancel) { yearToDelete = nil }
@@ -51,7 +51,7 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Domain & All KRs", role: .destructive) {
-                if let d = domainToDelete { modelContext.delete(d); try? modelContext.save() }
+                if let d = domainToDelete { d.deleteWithChildren(in: modelContext); try? modelContext.save() }
                 domainToDelete = nil
             }
             Button("Cancel", role: .cancel) { domainToDelete = nil }
@@ -64,7 +64,7 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Everything", role: .destructive) {
-                for year in years { modelContext.delete(year) }
+                for year in years { year.deleteWithChildren(in: modelContext) }
                 try? modelContext.save()
             }
             Button("Cancel", role: .cancel) {}
@@ -649,7 +649,7 @@ private struct ObjectiveEditRow: View {
                 titleVisibility: .visible
             ) {
                 Button("Delete Objective & KRs", role: .destructive) {
-                    modelContext.delete(objective)
+                    objective.deleteWithChildren(in: modelContext)
                     try? modelContext.save()
                 }
                 Button("Cancel", role: .cancel) {}

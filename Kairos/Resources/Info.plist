@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Kairos</string>
+	<string>FourOneEight</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Kairos</string>
+	<string>FourOneEight</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -33,29 +33,20 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Kairos reads your health data to surface physiological context during life reviews.</string>
+	<string>FourOneEight reads your health data to surface physiological context during life reviews.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kairos uses the microphone for voice pulse check-ins and monthly review recordings.</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Kairos transcribes your voice notes on-device for weekly pulse check-ins.</string>
-	<!-- iOS / iPadOS: scene lifecycle (required for SwiftUI @main on iOS 13+) -->
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-		<key>UISceneConfigurations</key>
-		<dict/>
-	</dict>
-	<!-- iOS / iPadOS: blank launch screen (no storyboard needed for SwiftUI) -->
-	<key>UILaunchScreen</key>
-	<dict/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
