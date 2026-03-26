@@ -531,6 +531,29 @@ struct SettingsView: View {
 
                 KairosDivider()
 
+                KairosDivider()
+
+                // Restart onboarding
+                Button {
+                    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                } label: {
+                    HStack {
+                        Image(systemName: "arrow.uturn.backward")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Restart introduction")
+                                .font(KairosTheme.Typography.body)
+                                .foregroundStyle(KairosTheme.Colors.textPrimary)
+                            Text("Shows the setup wizard on next launch")
+                                .font(KairosTheme.Typography.caption)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                        }
+                        Spacer()
+                    }
+                }
+                .buttonStyle(.plain)
+
+                KairosDivider()
+
                 // Reset
                 Button { showResetConfirmation = true } label: {
                     HStack {
