@@ -4,31 +4,29 @@ import HealthKit
 #endif
 
 // MARK: - HealthPanel
-// Shows 7-day physiological snapshot.
-// Data priority: Oura API → Apple Health (HealthKit).
+// Shows physiological snapshot.
+// iOS: reads live from HealthKit.
+// macOS: displays snapshot synced from an iOS device via CloudKit.
 
 struct HealthPanel: View {
-    @ObservedObject private var oura = OuraManager.shared
-    @ObservedObject private var hk   = HealthKitManager.shared
+    /// Snapshot stored on the current KairosYear and synced via CloudKit.
+    /// Populated by an iOS device running HealthKit.
+    var storedSnapshot: HealthSnapshot? = nil
+    var storedSnapshotDate: Date = Date.distantPast
 
-    // Setup form state
-    @State private var clientIdDraft     = ""
-    @State private var clientSecretDraft = ""
-    enum CredentialField { case clientId, clientSecret }
-    @FocusState private var setupFocus: CredentialField?
+    @ObservedObject private var hk = HealthKitManager.shared
 
-    // macOS: prefer Oura, fall back to HealthKit
-    // iOS/iPadOS: HealthKit only
     private var activeSnapshot: HealthSnapshot? {
         #if os(macOS)
-        return oura.snapshot ?? hk.snapshot
+        return storedSnapshot
         #else
         return hk.snapshot
         #endif
     }
+
     private var panelTitle: String {
         #if os(macOS)
-        return oura.snapshot != nil ? "Oura · 30-Day Signal" : "Body · 30-Day Signal"
+        return "Health · 30-Day Signal"
         #else
         return "Apple Health · 30-Day Signal"
         #endif
@@ -40,10 +38,6 @@ struct HealthPanel: View {
 
             if let snap = activeSnapshot {
                 metricsGrid(snap)
-            } else if oura.isAuthorized && oura.isFetching {
-                loadingView
-            } else if oura.isAuthorized, let err = oura.fetchError {
-                errorView(err)
             } else if hk.isAuthorized && hk.snapshot == nil {
                 loadingView
             } else {
@@ -58,22 +52,11 @@ struct HealthPanel: View {
                 .stroke(KairosTheme.Colors.border, lineWidth: 1)
         )
         .task {
-            #if os(macOS)
-            if oura.isAuthorized && oura.snapshot == nil {
-                await oura.fetchCurrentSnapshot()
-            } else if hk.isAuthorized && hk.snapshot == nil {
-                await hk.fetchCurrentSnapshot()
-            }
-            #else
+            #if os(iOS)
             if hk.isAuthorized && hk.snapshot == nil {
                 await hk.fetchCurrentSnapshot()
             }
             #endif
-        }
-        .onAppear {
-            // Pre-fill if credentials already saved (in case of re-auth after token expiry)
-            clientIdDraft = ""
-            clientSecretDraft = ""
         }
     }
 
@@ -81,33 +64,30 @@ struct HealthPanel: View {
 
     private var header: some View {
         HStack {
-            KairosLabel(text: panelTitle)
+            VStack(alignment: .leading, spacing: 2) {
+                KairosLabel(text: panelTitle)
+                #if os(macOS)
+                if storedSnapshotDate > Date.distantPast {
+                    Text("Synced \(relativeDate(storedSnapshotDate))")
+                        .font(KairosTheme.Typography.monoSmall)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                #endif
+            }
             Spacer()
             if let snap = activeSnapshot {
                 recoveryBadge(snap.recoverySignal)
             }
-            if oura.isAuthorized || hk.isAuthorized {
+            #if os(iOS)
+            if hk.isAuthorized {
                 Button {
-                    Task {
-                        if oura.isAuthorized { await oura.fetchCurrentSnapshot() }
-                        else { await hk.fetchCurrentSnapshot() }
-                    }
+                    Task { await hk.fetchCurrentSnapshot() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.caption)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
                 .buttonStyle(.plain)
-            }
-            #if os(macOS)
-            if oura.isAuthorized {
-                Button { oura.disconnectTokens() } label: {
-                    Image(systemName: "xmark.circle")
-                        .font(.caption)
-                        .foregroundStyle(KairosTheme.Colors.textMuted)
-                }
-                .buttonStyle(.plain)
-                .help("Disconnect — keeps credentials, just re-authorize")
             }
             #endif
         }
@@ -131,181 +111,26 @@ struct HealthPanel: View {
     // MARK: - Connection view
 
     private var connectionView: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            #if os(macOS)
-            // macOS: Oura first, HealthKit as secondary fallback
-            if !oura.isConfigured {
-                credentialSetupView
-            } else {
-                authorizeView
-            }
-            if hk.isAvailable && !hk.isAuthorized {
-                KairosDivider()
-                healthKitConnectRow
-            }
-            #else
-            // iPad: HealthKit is the primary (and only) source
-            healthKitConnectRow
-            #endif
-        }
+        #if os(macOS)
+        Text("Health data syncs automatically from an iPhone or iPad running FourOneEight. Open the app on your iOS device and connect Apple Health.")
+            .font(KairosTheme.Typography.caption)
+            .foregroundStyle(KairosTheme.Colors.textMuted)
+            .multilineTextAlignment(.leading)
+        #else
+        healthKitConnectRow
+        #endif
     }
 
-    // MARK: - Oura setup views (macOS only)
+    // MARK: - HealthKit connect row (iOS only)
 
-    #if os(macOS)
-
-    private var credentialSetupView: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Connect Oura Ring")
-                        .font(KairosTheme.Typography.headline)
-                        .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    Text("OAuth via your registered app — sleep, HRV, steps, recovery.")
-                        .font(KairosTheme.Typography.caption)
-                        .foregroundStyle(KairosTheme.Colors.textSecondary)
-                }
-            }
-
-            // Instructions
-            VStack(alignment: .leading, spacing: 4) {
-                instructionRow(n: "1", text: "Register at cloud.ouraring.com → OAuth Applications")
-                HStack(spacing: 4) {
-                    instructionRow(n: "2", text: "Set redirect URI:")
-                    Text(OuraManager.redirectURI)
-                        .font(KairosTheme.Typography.mono)
-                        .foregroundStyle(KairosTheme.Colors.accent)
-                    Button {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(OuraManager.redirectURI, forType: .string)
-                    } label: {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 10))
-                            .foregroundStyle(KairosTheme.Colors.textMuted)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Copy redirect URI")
-                }
-                instructionRow(n: "3", text: "Paste your Client ID and Secret below")
-            }
-            .padding(KairosTheme.Spacing.sm)
-            .background(KairosTheme.Colors.background)
-            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-
-            // Credential fields
-            VStack(spacing: KairosTheme.Spacing.xs) {
-                credentialField(label: "Client ID", text: $clientIdDraft, field: .clientId)
-                credentialField(label: "Client Secret", text: $clientSecretDraft, field: .clientSecret)
-            }
-
-            HStack {
-                Spacer()
-                Button("Continue →") {
-                    oura.saveCredentials(clientId: clientIdDraft, clientSecret: clientSecretDraft)
-                    clientIdDraft = ""
-                    clientSecretDraft = ""
-                }
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.background)
-                .padding(.horizontal, KairosTheme.Spacing.md)
-                .padding(.vertical, KairosTheme.Spacing.xs)
-                .background(credentialsValid ? KairosTheme.Colors.accent : KairosTheme.Colors.border)
-                .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-                .buttonStyle(.plain)
-                .disabled(!credentialsValid)
-            }
-        }
-    }
-
-    private var credentialsValid: Bool {
-        !clientIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !clientSecretDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private func instructionRow(n: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Text(n + ".")
-                .font(KairosTheme.Typography.monoSmall)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-                .frame(width: 12, alignment: .trailing)
-            Text(text)
-                .font(KairosTheme.Typography.monoSmall)
-                .foregroundStyle(KairosTheme.Colors.textSecondary)
-        }
-    }
-
-    private func credentialField(label: String, text: Binding<String>, field: CredentialField) -> some View {
-        HStack {
-            Text(label + ":")
-                .font(KairosTheme.Typography.monoSmall)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-                .frame(width: 90, alignment: .trailing)
-            TextField("", text: text)
-                .textFieldStyle(.plain)
-                .font(KairosTheme.Typography.mono)
-                .foregroundStyle(KairosTheme.Colors.textPrimary)
-                .focused($setupFocus, equals: field)
-        }
-        .padding(KairosTheme.Spacing.xs)
-        .background(KairosTheme.Colors.background)
-        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-        .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm)
-            .stroke(KairosTheme.Colors.border, lineWidth: 1))
-    }
-
-    // MARK: - Step 2: Authorize
-
-    private var authorizeView: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Oura app registered")
-                        .font(KairosTheme.Typography.headline)
-                        .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    Text("Complete OAuth in your browser to start syncing.")
-                        .font(KairosTheme.Typography.caption)
-                        .foregroundStyle(KairosTheme.Colors.textSecondary)
-                }
-                Spacer()
-                Button {
-                    oura.startAuthorization()
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("Authorize with Oura")
-                        Image(systemName: "arrow.up.right.square")
-                    }
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.background)
-                    .padding(.horizontal, KairosTheme.Spacing.md)
-                    .padding(.vertical, KairosTheme.Spacing.xs)
-                    .background(KairosTheme.Colors.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-                }
-                .buttonStyle(.plain)
-            }
-            if let err = oura.fetchError {
-                Text(err)
-                    .font(KairosTheme.Typography.monoSmall)
-                    .foregroundStyle(KairosTheme.Colors.status(.blocked))
-            }
-            Button("Reset credentials") { oura.resetAll() }
-                .font(KairosTheme.Typography.monoSmall)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-                .buttonStyle(.plain)
-        }
-    }
-
-    #endif // os(macOS)
-
-    // MARK: - HealthKit connect row (all platforms)
-
+    #if os(iOS)
     private var healthKitConnectRow: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Connect Apple Health")
                     .font(KairosTheme.Typography.headline)
                     .foregroundStyle(KairosTheme.Colors.textPrimary)
-                Text("HRV, sleep, steps, and activity rings.")
+                Text("HRV, sleep, steps, and activity.")
                     .font(KairosTheme.Typography.caption)
                     .foregroundStyle(KairosTheme.Colors.textSecondary)
             }
@@ -324,6 +149,7 @@ struct HealthPanel: View {
             .buttonStyle(.plain)
         }
     }
+    #endif
 
     // MARK: - States
 
@@ -333,24 +159,6 @@ struct HealthPanel: View {
             Text("Loading health data…")
                 .font(KairosTheme.Typography.caption)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
-        }
-    }
-
-    private func errorView(_ message: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle")
-                .foregroundStyle(KairosTheme.Colors.status(.blocked))
-            Text(message)
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
-                .lineLimit(2)
-            Spacer()
-            Button("Retry") {
-                Task { await oura.fetchCurrentSnapshot() }
-            }
-            .font(KairosTheme.Typography.caption)
-            .foregroundStyle(KairosTheme.Colors.accent)
-            .buttonStyle(.plain)
         }
     }
 
@@ -533,6 +341,12 @@ struct HealthPanel: View {
         if avg >= 7.5 { return "Optimal" }
         if avg >= 6.5 { return "Adequate" }
         return "Insufficient"
+    }
+
+    private func relativeDate(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

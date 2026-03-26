@@ -4,7 +4,6 @@ import SwiftData
 // MARK: - OnboardingView
 
 struct OnboardingView: View {
-    @AppStorage("ouraEnabled") private var ouraEnabled = true
     @AppStorage("healthKitEnabled") private var healthKitEnabled = true
     var onComplete: () -> Void
 
@@ -12,15 +11,20 @@ struct OnboardingView: View {
     @State private var showYearWizard = false
     @State private var yearSetupDone = false
 
+    private let totalSteps = 6
+
     var body: some View {
         ZStack {
             KairosTheme.Colors.background.ignoresSafeArea()
-
             Group {
                 switch step {
                 case 0: welcomeStep
-                case 1: yearStep
-                case 2: integrationsStep
+                case 1: conceptStep
+                case 2: exampleStep
+                case 3: rhythmStep
+                case 4: intelligenceStep
+                case 5: yearStep
+                case 6: healthStep
                 default: EmptyView()
                 }
             }
@@ -41,75 +45,206 @@ struct OnboardingView: View {
                     .font(KairosTheme.Typography.monoLarge)
                     .foregroundStyle(KairosTheme.Colors.textPrimary)
                     .tracking(6)
-                Text("Your annual operating system")
+                Text("A framework for deliberate annual living.")
                     .font(KairosTheme.Typography.body)
                     .foregroundStyle(KairosTheme.Colors.textMuted)
+                    .multilineTextAlignment(.center)
             }
             .padding(.bottom, KairosTheme.Spacing.xxl)
-
-            primaryButton("Get Started →") { step = 1 }
+            primaryButton("Get started") { step = 1 }
         }
     }
 
-    // MARK: - Step 1: Year Setup
+    // MARK: - Step 1: The concept
+
+    private var conceptStep: some View {
+        centeredContent {
+            stepHeader(
+                title: "Annual OKRs for your life",
+                subtitle: "OKRs — Objectives and Key Results — are a goal-setting framework used by high-performing teams. Here, they are applied to the one project that actually matters: your life."
+            )
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
+                conceptRow(
+                    label: "Domains",
+                    description: "The areas of life you choose to invest in. Health. Relationships. Work. Learning. Finances. You define what matters."
+                )
+                KairosDivider()
+                conceptRow(
+                    label: "Objectives",
+                    description: "What you want to achieve in each domain this year. Ambitious but honest. Not a task list — a direction."
+                )
+                KairosDivider()
+                conceptRow(
+                    label: "Key Results",
+                    description: "Specific, measurable evidence that progress has been made. Not activities. Evidence."
+                )
+            }
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+            .frame(maxWidth: 500)
+            .padding(.top, KairosTheme.Spacing.xl)
+            primaryButton("See an example") { step = 2 }
+                .padding(.top, KairosTheme.Spacing.xl)
+        }
+    }
+
+    // MARK: - Step 2: Example
+
+    private var exampleStep: some View {
+        centeredContent {
+            stepHeader(
+                title: "An example",
+                subtitle: "A single domain, broken down into one objective and three key results."
+            )
+            VStack(alignment: .leading, spacing: 0) {
+                exampleRow(level: .domain,    label: "Domain",     value: "Health")
+                exampleRow(level: .objective, label: "Objective",  value: "Build physical resilience")
+                exampleRow(level: .kr,        label: "Key Result", value: "Average 7.5 hours of sleep per night")
+                exampleRow(level: .kr,        label: "Key Result", value: "Complete 150 strength sessions by year end")
+                exampleRow(level: .kr,        label: "Key Result", value: "VO2 max above 45 by December")
+            }
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+            .frame(maxWidth: 500)
+            .padding(.top, KairosTheme.Spacing.xl)
+            primaryButton("Continue") { step = 3 }
+                .padding(.top, KairosTheme.Spacing.xl)
+        }
+    }
+
+    // MARK: - Step 3: The rhythm
+
+    private var rhythmStep: some View {
+        centeredContent {
+            stepHeader(
+                title: "How you will use it",
+                subtitle: "Three cadences. Each serves a different purpose."
+            )
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
+                rhythmRow(cadence: "Each year",  description: "Define your domains, objectives, and key results. Set an intention — a word or phrase that anchors the year.")
+                KairosDivider()
+                rhythmRow(cadence: "Each month", description: "A structured review. What moved. What didn't. Why. Recorded as a voice note and summarised automatically.")
+                KairosDivider()
+                rhythmRow(cadence: "Each week",  description: "A brief pulse. Energy level, themes, a short note. Takes two minutes. Compounds over time.")
+            }
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+            .frame(maxWidth: 500)
+            .padding(.top, KairosTheme.Spacing.xl)
+            primaryButton("Continue") { step = 4 }
+                .padding(.top, KairosTheme.Spacing.xl)
+        }
+    }
+
+    // MARK: - Step 4: Apple Intelligence
+
+    private var intelligenceStep: some View {
+        centeredContent {
+            stepHeader(
+                title: "On-device AI",
+                subtitle: "FourOneEight uses Apple Intelligence to generate insights, challenge your thinking during reviews, and summarise your year."
+            )
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
+                infoRow(
+                    title: "Private by design",
+                    body: "All AI runs on-device using Apple Intelligence. Your data never leaves your device."
+                )
+                KairosDivider()
+                infoRow(
+                    title: "Synced across devices",
+                    body: "Summaries generated on a device with Apple Intelligence are stored in iCloud and displayed on all your devices — including those without it."
+                )
+                KairosDivider()
+                infoRow(
+                    title: "Supported devices",
+                    body: "iPhone 16 and later, iPad mini (A17 Pro), iPad with M1 or later, Mac with Apple Silicon. Requires Apple Intelligence to be enabled in Settings."
+                )
+            }
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+            .frame(maxWidth: 500)
+            .padding(.top, KairosTheme.Spacing.xl)
+            primaryButton("Continue") { step = 5 }
+                .padding(.top, KairosTheme.Spacing.xl)
+        }
+    }
+
+    // MARK: - Step 5: Year setup
 
     private var yearStep: some View {
         centeredContent {
             stepHeader(
                 title: "Set up your year",
-                subtitle: "Define what you want to achieve in \(currentYear)"
+                subtitle: "Define your domains, objectives, and key results for \(currentYear)."
             )
-
             OnboardingCard(
-                icon: yearSetupDone ? "checkmark.circle.fill" : "sparkles",
-                title: yearSetupDone ? "\(currentYear) is set up" : "Set up \(currentYear)",
+                icon: yearSetupDone ? "checkmark.circle" : "calendar",
+                title: yearSetupDone ? String("\(currentYear) is set up") : String("Set up \(currentYear)"),
                 subtitle: yearSetupDone
                     ? "Domains, objectives, and key results created"
-                    : "Create your domains, objectives, and key results",
+                    : "Create your structure for the year",
                 accent: yearSetupDone ? KairosTheme.Colors.status(.done) : KairosTheme.Colors.accent
             ) {
                 showYearWizard = true
             }
             .frame(maxWidth: 460)
+            .padding(.top, KairosTheme.Spacing.xl)
 
             VStack(spacing: KairosTheme.Spacing.sm) {
-                primaryButton("Continue →") { step = 2 }
+                #if os(iOS)
+                primaryButton("Continue") { step = 6 }
                 if !yearSetupDone {
-                    skipButton("Skip for now") { step = 2 }
+                    skipButton("Skip for now") { step = 6 }
                 }
+                #else
+                primaryButton("Start using FourOneEight") { onComplete() }
+                if !yearSetupDone {
+                    skipButton("Skip for now") { onComplete() }
+                }
+                #endif
             }
             .padding(.top, KairosTheme.Spacing.xl)
         }
     }
 
-    // MARK: - Step 2: Integrations
+    // MARK: - Step 6: Health (iOS only)
 
-    private var integrationsStep: some View {
+    private var healthStep: some View {
         centeredContent {
             stepHeader(
-                title: "Health integrations",
-                subtitle: "Connect physiological data to your reviews.\nYou can change this any time in Settings."
+                title: "Health data",
+                subtitle: "Connect Apple Health to surface physiological context during your reviews."
             )
-
-            VStack(spacing: KairosTheme.Spacing.md) {
-                #if os(macOS)
-                integrationToggle(
-                    icon: "circle.hexagonpath",
-                    title: "Oura Ring",
-                    subtitle: "Sleep, HRV, recovery score via OAuth",
-                    isOn: $ouraEnabled
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
+                infoRow(
+                    title: "What it reads",
+                    body: "HRV, resting heart rate, sleep, steps, active energy, and VO2 max from the Health app."
                 )
-                #else
+                KairosDivider()
+                infoRow(
+                    title: "Synced to all devices",
+                    body: "Health data captured here is stored in iCloud and appears on your Mac and other devices automatically."
+                )
+                KairosDivider()
                 integrationToggle(
-                    icon: "heart.fill",
                     title: "Apple Health",
-                    subtitle: "Sleep, HRV, and activity rings from HealthKit",
+                    subtitle: "Show health panel on dashboard",
                     isOn: $healthKitEnabled
                 )
-                #endif
             }
-            .frame(maxWidth: 460)
-
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+            .frame(maxWidth: 500)
+            .padding(.top, KairosTheme.Spacing.xl)
             primaryButton("Start using FourOneEight") { onComplete() }
                 .padding(.top, KairosTheme.Spacing.xl)
         }
@@ -118,34 +253,75 @@ struct OnboardingView: View {
     // MARK: - Shared components
 
     private func centeredContent<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: 0) { content() }
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: KairosTheme.Spacing.xxl)
+                VStack(spacing: 0) { content() }
+                    .padding(KairosTheme.Spacing.xxl)
+                Spacer(minLength: KairosTheme.Spacing.xxl)
+            }
+            .frame(maxWidth: .infinity, minHeight: 400)
         }
-        .padding(KairosTheme.Spacing.xxl)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func stepHeader(title: String, subtitle: String) -> some View {
-        VStack(spacing: KairosTheme.Spacing.xs) {
+        VStack(spacing: KairosTheme.Spacing.sm) {
             Text(title)
                 .font(KairosTheme.Typography.displayMedium)
                 .foregroundStyle(KairosTheme.Colors.textPrimary)
+                .multilineTextAlignment(.center)
             Text(subtitle)
                 .font(KairosTheme.Typography.body)
                 .foregroundStyle(KairosTheme.Colors.textMuted)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.bottom, KairosTheme.Spacing.xl)
+        .padding(.bottom, KairosTheme.Spacing.lg)
+        .frame(maxWidth: 500)
     }
 
-    private func integrationToggle(icon: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+    private func conceptRow(label: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: KairosTheme.Spacing.md) {
+            Text(label)
+                .font(KairosTheme.Typography.mono)
+                .foregroundStyle(KairosTheme.Colors.accent)
+                .frame(width: 90, alignment: .leading)
+            Text(description)
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+        }
+    }
+
+    private func rhythmRow(cadence: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: KairosTheme.Spacing.md) {
+            Text(cadence)
+                .font(KairosTheme.Typography.mono)
+                .foregroundStyle(KairosTheme.Colors.accent)
+                .frame(width: 90, alignment: .leading)
+            Text(description)
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+        }
+    }
+
+    private func infoRow(title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(KairosTheme.Typography.headline)
+                .foregroundStyle(KairosTheme.Colors.textPrimary)
+            Text(body)
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func integrationToggle(title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: KairosTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(isOn.wrappedValue ? KairosTheme.Colors.accent : KairosTheme.Colors.textMuted)
-                .frame(width: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(KairosTheme.Typography.headline)
@@ -159,16 +335,6 @@ struct OnboardingView: View {
                 .toggleStyle(.switch)
                 .labelsHidden()
         }
-        .padding(KairosTheme.Spacing.md)
-        .background(KairosTheme.Colors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
-        .overlay(
-            RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
-                .stroke(
-                    isOn.wrappedValue ? KairosTheme.Colors.accent.opacity(0.4) : KairosTheme.Colors.border,
-                    lineWidth: 1
-                )
-        )
     }
 
     private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -196,6 +362,26 @@ struct OnboardingView: View {
     private var currentYear: Int {
         Calendar.current.component(.year, from: Date())
     }
+}
+
+// MARK: - Example row levels
+
+private enum ExampleLevel { case domain, objective, kr }
+
+private func exampleRow(level: ExampleLevel, label: String, value: String) -> some View {
+    HStack(alignment: .top, spacing: KairosTheme.Spacing.md) {
+        Text(label)
+            .font(KairosTheme.Typography.monoSmall)
+            .foregroundStyle(KairosTheme.Colors.textMuted)
+            .frame(width: 80, alignment: .leading)
+            .padding(.leading, level == .kr ? 16 : level == .objective ? 8 : 0)
+        Text(value)
+            .font(level == .domain ? KairosTheme.Typography.headline : KairosTheme.Typography.body)
+            .foregroundStyle(level == .domain ? KairosTheme.Colors.textPrimary : KairosTheme.Colors.textSecondary)
+        Spacer()
+    }
+    .padding(.horizontal, KairosTheme.Spacing.md)
+    .padding(.vertical, KairosTheme.Spacing.sm)
 }
 
 // MARK: - OnboardingCard

@@ -32,13 +32,19 @@ struct DashboardView: View {
     var navigate: (KairosRoute) -> Void = { _ in }
 
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
+    @Query(
+        filter: #Predicate<KairosYear> { $0.isArchived == false },
+        sort: \KairosYear.year, order: .reverse
+    ) private var years: [KairosYear]
     @Query private var allKeyResults: [KairosKeyResult]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 
-    @AppStorage("ouraEnabled") private var ouraEnabled = true
     @AppStorage("healthKitEnabled") private var healthKitEnabled = true
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    #if os(iOS)
+    @ObservedObject private var hk = HealthKitManager.shared
+    #endif
 
     @State private var selectedYear = 2026
     @State private var showingWizard = false
@@ -57,7 +63,7 @@ struct DashboardView: View {
 
     private var showHealthPanel: Bool {
         #if os(macOS)
-        return ouraEnabled
+        return healthKitEnabled && currentYear?.storedHealthSnapshot != nil
         #else
         return healthKitEnabled
         #endif
@@ -69,7 +75,12 @@ struct DashboardView: View {
                 header
                 if let year = currentYear {
                     overallProgress(for: year)
-                    if showHealthPanel { HealthPanel() }
+                    if showHealthPanel {
+                        HealthPanel(
+                            storedSnapshot: year.storedHealthSnapshot,
+                            storedSnapshotDate: year.latestHealthSnapshotCapturedAt
+                        )
+                    }
                     domainGrid(for: year)
                 } else {
                     emptyState
@@ -83,6 +94,13 @@ struct DashboardView: View {
             guard let year = currentYear else { return }
             await generateYearSummary(for: year)
         }
+        #if os(iOS)
+        .onChange(of: hk.snapshot) { _, newSnap in
+            guard let snap = newSnap, let year = currentYear else { return }
+            year.storedHealthSnapshot = snap
+            try? modelContext.save()
+        }
+        #endif
     }
 
     // MARK: - AI Summary
@@ -100,7 +118,8 @@ struct DashboardView: View {
         }
 
         guard intelligence.isUsingAI else {
-            yearSummary = fallback
+            // Show stored AI summary from another device if available, otherwise computed fallback
+            yearSummary = year.aiSummary.isEmpty ? fallback : year.aiSummary
             return
         }
 

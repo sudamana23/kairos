@@ -63,8 +63,8 @@ targets:
         CFBundleName: FourOneEight
         CFBundleDisplayName: FourOneEight
         LSApplicationCategoryType: public.app-category.productivity
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "5"
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "7"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:

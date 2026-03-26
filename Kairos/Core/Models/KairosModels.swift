@@ -8,10 +8,16 @@ final class KairosYear {
     var id: UUID = UUID()
     var year: Int = 0
     var intention: String = ""
+    var isArchived: Bool = false
+
     /// AI-generated one-sentence insight, refreshed once per month after a monthly review.
     var aiSummary: String = ""
     /// The year+month (e.g. 202603) when aiSummary was last generated.
     var aiSummaryGeneratedMonth: Int = 0
+
+    /// JSON-encoded HealthSnapshot synced from the most recent iOS device.
+    var latestHealthSnapshotData: String = ""
+    var latestHealthSnapshotCapturedAt: Date = Date.distantPast
 
     // CloudKit requires to-many relationships to be optional ([T]?).
     // The computed `domains` wrapper keeps the public API non-optional.
@@ -33,6 +39,10 @@ final class KairosYear {
     }
 
     var sortedDomains: [KairosDomain] {
+        domains.filter { !$0.isArchived }.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    var allSortedDomains: [KairosDomain] {
         domains.sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -44,6 +54,25 @@ final class KairosYear {
         let krs = allKeyResults
         guard !krs.isEmpty else { return 0 }
         return krs.reduce(0.0) { $0 + $1.currentStatus.weight } / Double(krs.count)
+    }
+
+    /// Decoded health snapshot captured on an iOS device and synced via CloudKit.
+    var storedHealthSnapshot: HealthSnapshot? {
+        get {
+            guard !latestHealthSnapshotData.isEmpty,
+                  let data = latestHealthSnapshotData.data(using: .utf8),
+                  let snap = try? JSONDecoder().decode(HealthSnapshot.self, from: data)
+            else { return nil }
+            return snap
+        }
+        set {
+            guard let snap = newValue,
+                  let data = try? JSONEncoder().encode(snap),
+                  let str = String(data: data, encoding: .utf8)
+            else { latestHealthSnapshotData = ""; return }
+            latestHealthSnapshotData = str
+            latestHealthSnapshotCapturedAt = Date()
+        }
     }
 }
 
@@ -57,6 +86,7 @@ final class KairosDomain {
     var identityStatement: String = ""
     var sortOrder: Int = 0
     var colorHex: String = ""
+    var isArchived: Bool = false
 
     var year: KairosYear?
 
@@ -106,6 +136,7 @@ final class KairosObjective {
     var id: UUID = UUID()
     var title: String = ""
     var sortOrder: Int = 0
+    var isArchived: Bool = false
 
     var domain: KairosDomain?
 
@@ -138,6 +169,7 @@ final class KairosKeyResult {
     var id: UUID = UUID()
     var title: String = ""
     var sortOrder: Int = 0
+    var isArchived: Bool = false
 
     var objective: KairosObjective?
 
@@ -214,6 +246,7 @@ final class KairosWeeklyPulse {
     var note: String = ""
     var sentimentScore: Double = 0
     var audioFileName: String = ""
+    var isArchived: Bool = false
 
     init(date: Date = Date()) {
         self.date = date
@@ -248,6 +281,7 @@ final class KairosMonthlyReview {
     var summaryPoint3: String = ""
     var audioFileName: String = ""
     var createdAt: Date = Date()
+    var isArchived: Bool = false
 
     init(year: Int, month: Int) {
         self.year = year

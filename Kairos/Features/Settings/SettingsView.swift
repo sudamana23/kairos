@@ -4,16 +4,25 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
+    @Query(
+        filter: #Predicate<KairosYear> { $0.isArchived == false },
+        sort: \KairosYear.year, order: .reverse
+    ) private var years: [KairosYear]
+    @Query(
+        filter: #Predicate<KairosYear> { $0.isArchived == true },
+        sort: \KairosYear.year, order: .reverse
+    ) private var archivedYears: [KairosYear]
 
-    @AppStorage("ouraEnabled") private var ouraEnabled = true
     @AppStorage("healthKitEnabled") private var healthKitEnabled = true
 
     @State private var showYearWizard = false
     @State private var expandedYears: Set<Int> = []
+    @State private var yearToArchive: KairosYear?
     @State private var yearToDelete: KairosYear?
+    @State private var domainToArchive: KairosDomain?
     @State private var domainToDelete: KairosDomain?
     @State private var showResetConfirmation = false
+    @State private var showArchiveSection = false
     @State private var notificationsAuthorized = false
     @State private var pulseNotifEnabled = true
     @State private var reviewNotifEnabled = true
@@ -32,37 +41,68 @@ struct SettingsView: View {
                 yearSetupSection
                 integrationsSection
                 yearsSection
+                archiveSection
                 notificationsSection
                 dataSection
             }
             .padding(KairosTheme.Spacing.xl)
         }
         .background(KairosTheme.Colors.background)
+        // Archive year
         .confirmationDialog(
-            "Delete \(yearToDelete.map { String($0.year) } ?? "Year")?",
+            "Archive \(yearToArchive.map { String($0.year) } ?? "Year")?",
+            isPresented: Binding(get: { yearToArchive != nil }, set: { if !$0 { yearToArchive = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Archive Year") {
+                if let y = yearToArchive { y.isArchived = true; try? modelContext.save() }
+                yearToArchive = nil
+            }
+            Button("Cancel", role: .cancel) { yearToArchive = nil }
+        } message: {
+            Text("Archived years are hidden from the dashboard. You can restore them from the Archive section below.")
+        }
+        // Permanent delete year (from archive)
+        .confirmationDialog(
+            "Permanently delete \(yearToDelete.map { String($0.year) } ?? "Year")?",
             isPresented: Binding(get: { yearToDelete != nil }, set: { if !$0 { yearToDelete = nil } }),
             titleVisibility: .visible
         ) {
-            Button("Delete Year & All Data", role: .destructive) {
+            Button("Delete Permanently", role: .destructive) {
                 if let y = yearToDelete { y.deleteWithChildren(in: modelContext); try? modelContext.save() }
                 yearToDelete = nil
             }
             Button("Cancel", role: .cancel) { yearToDelete = nil }
         } message: {
-            Text("This permanently deletes all domains, objectives, and key results for this year.")
+            Text("This permanently deletes all domains, objectives, and key results for this year. This cannot be undone.")
         }
+        // Archive domain
         .confirmationDialog(
-            "Delete \"\(domainToDelete?.name ?? "Domain")\"?",
+            "Archive \"\(domainToArchive?.name ?? "Domain")\"?",
+            isPresented: Binding(get: { domainToArchive != nil }, set: { if !$0 { domainToArchive = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Archive Domain") {
+                if let d = domainToArchive { d.isArchived = true; try? modelContext.save() }
+                domainToArchive = nil
+            }
+            Button("Cancel", role: .cancel) { domainToArchive = nil }
+        } message: {
+            Text("Archived domains are hidden from the dashboard. You can restore them from the Archive section below.")
+        }
+        // Permanent delete domain (from archive)
+        .confirmationDialog(
+            "Permanently delete \"\(domainToDelete?.name ?? "Domain")\"?",
             isPresented: Binding(get: { domainToDelete != nil }, set: { if !$0 { domainToDelete = nil } }),
             titleVisibility: .visible
         ) {
-            Button("Delete Domain & All KRs", role: .destructive) {
+            Button("Delete Permanently", role: .destructive) {
                 if let d = domainToDelete { d.deleteWithChildren(in: modelContext); try? modelContext.save() }
                 domainToDelete = nil
             }
             Button("Cancel", role: .cancel) { domainToDelete = nil }
         } message: {
-            Text("This permanently deletes all objectives and key results in this domain.")
+            Text("This permanently deletes all objectives and key results in this domain. This cannot be undone.")
         }
         .confirmationDialog(
             "Reset All Data?",
@@ -194,34 +234,26 @@ struct SettingsView: View {
 
     private var integrationsSection: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            KairosLabel(text: "Health Integrations")
+            KairosLabel(text: "Health")
 
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
-                #if os(macOS)
-                Toggle(isOn: $ouraEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Oura Ring")
-                            .font(KairosTheme.Typography.body)
-                            .foregroundStyle(KairosTheme.Colors.textPrimary)
-                        Text("Show health panel on dashboard")
-                            .font(KairosTheme.Typography.caption)
-                            .foregroundStyle(KairosTheme.Colors.textMuted)
-                    }
-                }
-                .toggleStyle(.switch)
-                #else
                 Toggle(isOn: $healthKitEnabled) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Apple Health")
+                        Text("Health panel")
                             .font(KairosTheme.Typography.body)
                             .foregroundStyle(KairosTheme.Colors.textPrimary)
-                        Text("Show health panel on dashboard")
+                        #if os(macOS)
+                        Text("Show physiological data synced from your iPhone or iPad")
                             .font(KairosTheme.Typography.caption)
                             .foregroundStyle(KairosTheme.Colors.textMuted)
+                        #else
+                        Text("Show Apple Health data on dashboard")
+                            .font(KairosTheme.Typography.caption)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                        #endif
                     }
                 }
                 .toggleStyle(.switch)
-                #endif
             }
             .padding(KairosTheme.Spacing.md)
             .background(KairosTheme.Colors.surface)
@@ -267,9 +299,88 @@ struct SettingsView: View {
                                 expandedYears.insert(year.year)
                             }
                         },
-                        onDeleteYear: { yearToDelete = year },
-                        onDeleteDomain: { domainToDelete = $0 }
+                        onArchiveYear: { yearToArchive = year },
+                        onArchiveDomain: { domainToArchive = $0 }
                     )
+                }
+            }
+        }
+    }
+
+    // MARK: - Archive Section
+
+    private var archiveSection: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { showArchiveSection.toggle() }
+            } label: {
+                HStack {
+                    KairosLabel(text: "Archive")
+                    Spacer()
+                    if !archivedYears.isEmpty {
+                        Text("\(archivedYears.count)")
+                            .font(KairosTheme.Typography.monoSmall)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(KairosTheme.Colors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    Image(systemName: showArchiveSection ? "chevron.up" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+            }
+            .buttonStyle(.plain)
+
+            if showArchiveSection {
+                if archivedYears.isEmpty {
+                    Text("Nothing archived.")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .padding(KairosTheme.Spacing.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(KairosTheme.Colors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+                        .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(archivedYears.enumerated()), id: \.element.id) { idx, year in
+                            if idx > 0 { KairosDivider().padding(.horizontal, KairosTheme.Spacing.md) }
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(String(year.year))
+                                        .font(KairosTheme.Typography.monoLarge)
+                                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                                    Text("\(year.domains.count) domains · \(year.allKeyResults.count) KRs")
+                                        .font(KairosTheme.Typography.monoSmall)
+                                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                                }
+                                Spacer()
+                                Button("Restore") {
+                                    year.isArchived = false
+                                    try? modelContext.save()
+                                }
+                                .font(KairosTheme.Typography.caption)
+                                .foregroundStyle(KairosTheme.Colors.accent)
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    yearToDelete = year
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.leading, KairosTheme.Spacing.sm)
+                            }
+                            .padding(KairosTheme.Spacing.md)
+                        }
+                    }
+                    .background(KairosTheme.Colors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
                 }
             }
         }
@@ -454,8 +565,8 @@ private struct YearCard: View {
     let year: KairosYear
     let isExpanded: Bool
     let onToggle: () -> Void
-    let onDeleteYear: () -> Void
-    let onDeleteDomain: (KairosDomain) -> Void
+    let onArchiveYear: () -> Void
+    let onArchiveDomain: (KairosDomain) -> Void
 
     @Environment(\.modelContext) private var modelContext
     @State private var editingIntention = false
@@ -485,14 +596,14 @@ private struct YearCard: View {
                 Spacer()
 
                 Button {
-                    onDeleteYear()
+                    onArchiveYear()
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemName: "archivebox")
                         .font(.caption)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
                 .buttonStyle(.plain)
-                .help("Delete \(String(year.year))")
+                .help("Archive \(String(year.year))")
             }
             .padding(KairosTheme.Spacing.md)
 
@@ -540,7 +651,7 @@ private struct YearCard: View {
                                     next.sortOrder = tmp
                                     try? domain.modelContext?.save()
                                 },
-                                onDelete: { onDeleteDomain(domain) }
+                                onDelete: { onArchiveDomain(domain) }
                             )
                         }
                         Button {
@@ -649,14 +760,14 @@ private struct DomainEditRow: View {
                     .disabled(!canMoveDown)
                 }
 
-                // Delete
+                // Archive
                 Button(action: onDelete) {
-                    Image(systemName: "trash")
+                    Image(systemName: "archivebox")
                         .font(.caption2)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
                 .buttonStyle(.plain)
-                .help("Delete \(domain.name)")
+                .help("Archive \(domain.name)")
             }
             .padding(.horizontal, KairosTheme.Spacing.sm)
             .padding(.vertical, KairosTheme.Spacing.xs)
