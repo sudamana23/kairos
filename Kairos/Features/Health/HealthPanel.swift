@@ -33,6 +33,41 @@ struct HealthPanel: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        if activeSnapshot == nil {
+            macPendingSyncStrip
+        } else {
+            fullPanel
+        }
+        #else
+        fullPanel
+        #endif
+    }
+
+    // Compact one-line strip shown on Mac when no snapshot has synced yet.
+    #if os(macOS)
+    private var macPendingSyncStrip: some View {
+        HStack(spacing: KairosTheme.Spacing.sm) {
+            Image(systemName: "iphone.and.arrow.forward")
+                .font(.caption)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+            Text("Pending sync from an Apple Health enabled device.")
+                .font(KairosTheme.Typography.caption)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+            Spacer()
+        }
+        .padding(.horizontal, KairosTheme.Spacing.md)
+        .padding(.vertical, KairosTheme.Spacing.sm)
+        .background(KairosTheme.Colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
+                .stroke(KairosTheme.Colors.border, lineWidth: 1)
+        )
+    }
+    #endif
+
+    private var fullPanel: some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
             header
 

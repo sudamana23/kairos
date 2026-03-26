@@ -191,6 +191,10 @@ final class FoundationModelsEngine: IntelligenceEngine, @unchecked Sendable {
         return """
         \(persona)
 
+        Respond directly. Never open with acknowledgements, affirmations, or phrases like \
+        "Sure", "Certainly", "Of course", "I'd be happy to", "Great", or any other preamble. \
+        Output only the answer itself — no introduction, no sign-off.
+
         The person's current data:
         \(dataLines.joined(separator: "\n"))
         """

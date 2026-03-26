@@ -279,6 +279,8 @@ struct PulseView: View {
         pulse.note = note
         context.insert(pulse)
         try? context.save()
+        // Cancel Wednesday nudge — pulse logged for this week
+        Task { await NotificationManager.shared.pulseLogged() }
         withAnimation { isCapturing = false; reset() }
     }
 

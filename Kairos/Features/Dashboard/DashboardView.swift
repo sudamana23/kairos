@@ -32,10 +32,10 @@ struct DashboardView: View {
     var navigate: (KairosRoute) -> Void = { _ in }
 
     @Environment(\.modelContext) private var modelContext
-    @Query(
-        filter: #Predicate<KairosYear> { $0.isArchived == false },
-        sort: \KairosYear.year, order: .reverse
-    ) private var years: [KairosYear]
+    @Query(sort: \KairosYear.year, order: .reverse) private var allYears: [KairosYear]
+    private var years: [KairosYear] { allYears.filter { !$0.isArchived } }
+    // Ensures live re-render when CloudKit delivers remote deletions.
+    private var _sync: Int { CloudKitSyncMonitor.shared.remoteChangeToken }
     @Query private var allKeyResults: [KairosKeyResult]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 
@@ -121,8 +121,8 @@ struct DashboardView: View {
         yearSummary = year.aiSummary.isEmpty ? nil : year.aiSummary   // show stale while loading
         let ctx = intelligence.buildContext(from: year, pulses: Array(pulses.prefix(4)))
         let prompt = """
-        In exactly one sentence (max 18 words), what is the single sharpest insight about this \
-        person's year so far? Be specific, not generic.
+        State the single sharpest, most specific insight about this person's year so far. \
+        One sentence. Maximum 18 words. No preamble.
         """
         do {
             let result = try await intelligence.engine.complete(prompt: prompt, context: ctx)
@@ -183,17 +183,31 @@ struct DashboardView: View {
                         .italic()
                 }
                 // AI year summary
-                if let summary = yearSummary {
-                    Text(summary)
-                        .font(KairosTheme.Typography.body)
-                        .foregroundStyle(KairosTheme.Colors.accent.opacity(0.9))
-                        .italic()
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                } else if isSummaryLoading {
-                    Text("Analyzing…")
-                        .font(KairosTheme.Typography.caption)
-                        .foregroundStyle(KairosTheme.Colors.textMuted)
-                        .italic()
+                HStack(alignment: .top, spacing: KairosTheme.Spacing.xs) {
+                    if let summary = yearSummary {
+                        Text(summary)
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.accent.opacity(0.9))
+                            .italic()
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    } else if isSummaryLoading {
+                        Text("Analyzing…")
+                            .font(KairosTheme.Typography.caption)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                            .italic()
+                    }
+                    if intelligence.isUsingAI && !isSummaryLoading, let year = currentYear {
+                        Button {
+                            year.aiSummaryGeneratedMonth = 0
+                            Task { await generateYearSummary(for: year) }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 10))
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Regenerate summary")
+                    }
                 }
             }
             Spacer()

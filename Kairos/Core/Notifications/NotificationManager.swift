@@ -33,13 +33,15 @@ final class NotificationManager {
 
     // MARK: - Schedule
 
-    /// Call once after permission is granted (or already granted).
+    /// Schedules all active notifications. Call on launch and after permission is granted.
     func scheduleAll() async {
         guard await isAuthorized else { return }
         scheduleWeeklyPulse()
+        scheduleWednesdayNudge()
         scheduleMonthlyReview()
     }
 
+    /// Monday 9am — repeating weekly prompt.
     func scheduleWeeklyPulse(weekday: Int = 2, hour: Int = 9) {
         center.removePendingNotificationRequests(withIdentifiers: ["kairos.weekly-pulse"])
 
@@ -55,6 +57,24 @@ final class NotificationManager {
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: dc, repeats: true)
         center.add(UNNotificationRequest(identifier: "kairos.weekly-pulse", content: content, trigger: trigger))
+    }
+
+    /// Wednesday 9am — nudge if pulse still not logged. Cancelled when a pulse is saved.
+    func scheduleWednesdayNudge(weekday: Int = 4, hour: Int = 9) {
+        center.removePendingNotificationRequests(withIdentifiers: ["kairos.pulse-nudge"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Weekly Pulse"
+        content.body = "Still haven't logged your pulse — takes 90 seconds."
+        content.sound = .default
+
+        var dc = DateComponents()
+        dc.weekday = weekday  // 4 = Wednesday
+        dc.hour    = hour
+        dc.minute  = 0
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dc, repeats: true)
+        center.add(UNNotificationRequest(identifier: "kairos.pulse-nudge", content: content, trigger: trigger))
     }
 
     func scheduleMonthlyReview(day: Int = 1, hour: Int = 10) {
@@ -74,6 +94,13 @@ final class NotificationManager {
         center.add(UNNotificationRequest(identifier: "kairos.monthly-review", content: content, trigger: trigger))
     }
 
+    /// Call whenever a weekly pulse is saved. Cancels the Wednesday nudge and
+    /// immediately reschedules it so it fires next Wednesday (not this one).
+    func pulseLogged() {
+        cancelWednesdayNudge()
+        scheduleWednesdayNudge()
+    }
+
     // MARK: - Cancel
 
     func cancelAll() {
@@ -81,6 +108,7 @@ final class NotificationManager {
         center.removeAllDeliveredNotifications()
     }
 
-    func cancelWeeklyPulse()   { center.removePendingNotificationRequests(withIdentifiers: ["kairos.weekly-pulse"]) }
-    func cancelMonthlyReview() { center.removePendingNotificationRequests(withIdentifiers: ["kairos.monthly-review"]) }
+    func cancelWeeklyPulse()    { center.removePendingNotificationRequests(withIdentifiers: ["kairos.weekly-pulse"]) }
+    func cancelWednesdayNudge() { center.removePendingNotificationRequests(withIdentifiers: ["kairos.pulse-nudge"]) }
+    func cancelMonthlyReview()  { center.removePendingNotificationRequests(withIdentifiers: ["kairos.monthly-review"]) }
 }

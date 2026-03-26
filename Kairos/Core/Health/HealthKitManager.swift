@@ -4,7 +4,7 @@ import Foundation
 // A point-in-time summary of physiological signals.
 // Built from rolling windows: 7-day avg for daily metrics, last night for sleep.
 
-struct HealthSnapshot: Sendable, Codable {
+struct HealthSnapshot: Sendable, Codable, Equatable {
     let date: Date
 
     // Recovery

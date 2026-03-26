@@ -185,7 +185,9 @@ struct YearWizardView: View {
             HStack(spacing: KairosTheme.Spacing.md) {
                 ForEach(year.sortedDomains) { domain in
                     VStack(spacing: 3) {
-                        Text(domain.emoji).font(.title3)
+                        Circle()
+                            .fill(KairosTheme.Colors.domain(domain.name))
+                            .frame(width: 12, height: 12)
                         Text("\(Int(domain.progress * 100))%")
                             .font(KairosTheme.Typography.monoSmall)
                             .foregroundStyle(KairosTheme.Colors.textMuted)
@@ -233,7 +235,9 @@ struct YearWizardView: View {
                             .toggleStyle(.switch)
                             .labelsHidden()
                             .scaleEffect(0.75)
-                        Text(domain.emoji).font(.title3)
+                        Circle()
+                            .fill(KairosTheme.Colors.domain(domain.name))
+                            .frame(width: 10, height: 10)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(domain.name)
                                 .font(KairosTheme.Typography.headline)
@@ -260,7 +264,7 @@ struct YearWizardView: View {
             }
 
             Button {
-                domains.append(WizardDomain(name: "New Domain", emoji: "✦", colorHex: "#6A6A8A", sortOrder: domains.count))
+                domains.append(WizardDomain(name: "New Domain", emoji: "", colorHex: "#6A6A8A", sortOrder: domains.count))
             } label: {
                 Label("Add domain", systemImage: "plus")
                     .font(KairosTheme.Typography.caption)
@@ -345,7 +349,7 @@ struct YearWizardView: View {
                 if domain.enabled {
                     ForEach($domain.objectives) { $obj in
                         if obj.enabled && !obj.title.isEmpty {
-                            objectiveKRCard(objective: $obj, domainEmoji: domain.emoji)
+                            objectiveKRCard(objective: $obj)
                         }
                     }
                 }
@@ -353,7 +357,7 @@ struct YearWizardView: View {
         }
     }
 
-    private func objectiveKRCard(objective: Binding<WizardObjective>, domainEmoji: String) -> some View {
+    private func objectiveKRCard(objective: Binding<WizardObjective>) -> some View {
         VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
             Text(objective.wrappedValue.title)
                 .font(KairosTheme.Typography.caption)

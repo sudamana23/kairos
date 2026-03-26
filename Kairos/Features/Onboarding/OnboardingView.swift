@@ -197,20 +197,13 @@ struct OnboardingView: View {
             .frame(maxWidth: 460)
             .padding(.top, KairosTheme.Spacing.xl)
 
-            VStack(spacing: KairosTheme.Spacing.sm) {
-                #if os(iOS)
-                primaryButton("Continue") { step = 6 }
-                if !yearSetupDone {
-                    skipButton("Skip for now") { step = 6 }
-                }
-                #else
-                primaryButton("Start using FourOneEight") { onComplete() }
-                if !yearSetupDone {
-                    skipButton("Skip for now") { onComplete() }
-                }
-                #endif
-            }
-            .padding(.top, KairosTheme.Spacing.xl)
+            #if os(iOS)
+            primaryButton("Continue") { step = 6 }
+                .padding(.top, KairosTheme.Spacing.xl)
+            #else
+            primaryButton("Continue to the app") { onComplete() }
+                .padding(.top, KairosTheme.Spacing.xl)
+            #endif
         }
     }
 

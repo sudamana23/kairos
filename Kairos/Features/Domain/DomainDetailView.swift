@@ -96,7 +96,8 @@ struct DomainDetailView: View {
                     },
                     onMoveKRToObjective: { kr, obj in kr.objective = obj },
                     onDelete: {
-                        objective.deleteWithChildren(in: modelContext)
+                        objective.isArchived = true
+                        for kr in objective.keyResults { kr.isArchived = true }
                         try? modelContext.save()
                     },
                     onAddKR: {
@@ -204,22 +205,22 @@ struct ObjectiveRow: View {
                 Divider()
             }
             if onDelete != nil {
-                Button(role: .destructive) {
+                Button {
                     confirmDelete = true
                 } label: {
-                    Label("Delete Objective", systemImage: "trash")
+                    Label("Archive Objective", systemImage: "archivebox")
                 }
             }
         }
         .confirmationDialog(
-            "Delete \"\(objective.title)\"?",
+            "Archive \"\(objective.title)\"?",
             isPresented: $confirmDelete,
             titleVisibility: .visible
         ) {
-            Button("Delete Objective & KRs", role: .destructive) { onDelete?() }
+            Button("Archive Objective & KRs", role: .destructive) { onDelete?() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Permanently deletes \(objective.keyResults.count) key result(s).")
+            Text("Hides this objective and its \(objective.keyResults.count) key result(s). Restore anytime in Settings.")
         }
     }
 
@@ -452,17 +453,17 @@ struct KeyResultRow: View {
                         .fixedSize()
                     }
 
-                    // Delete button — always visible
+                    // Archive button — always visible
                     Button {
                         confirmDelete = true
                     } label: {
-                        Image(systemName: "trash")
+                        Image(systemName: "archivebox")
                             .font(.system(size: 10))
                             .foregroundStyle(KairosTheme.Colors.textMuted)
                             .touchTarget()
                     }
                     .buttonStyle(.plain)
-                    .help("Delete key result")
+                    .help("Archive key result")
                 }
 
                 // Commentary
@@ -495,24 +496,24 @@ struct KeyResultRow: View {
                 }
                 Divider()
             }
-            Button(role: .destructive) {
+            Button {
                 confirmDelete = true
             } label: {
-                Label("Delete Key Result", systemImage: "trash")
+                Label("Archive Key Result", systemImage: "archivebox")
             }
         }
         .confirmationDialog(
-            "Delete this key result?",
+            "Archive \"\(kr.title)\"?",
             isPresented: $confirmDelete,
             titleVisibility: .visible
         ) {
-            Button("Delete", role: .destructive) {
-                kr.deleteWithChildren(in: modelContext)
+            Button("Archive", role: .destructive) {
+                kr.isArchived = true
                 try? modelContext.save()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("\"\(kr.title)\" and all its monthly entries will be removed.")
+            Text("Hides this key result. Restore anytime in Settings.")
         }
         .draggable(KRDrop(krID: kr.id.uuidString)) {
             HStack(spacing: 6) {

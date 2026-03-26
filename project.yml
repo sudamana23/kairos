@@ -8,6 +8,7 @@ schemes:
     build:
       targets:
         Kairos: all
+        KairosWidget: [build, archive]
     run:
       config: Debug
     test:
@@ -37,6 +38,10 @@ targets:
       - sdk: Security.framework
       - sdk: Speech.framework
       - sdk: UserNotifications.framework
+      - sdk: WidgetKit.framework
+        platforms: [iOS]
+      - target: KairosWidget
+        platforms: [iOS]
     settings:
       base:
         PRODUCT_NAME: FourOneEight
@@ -63,8 +68,8 @@ targets:
         CFBundleName: FourOneEight
         CFBundleDisplayName: FourOneEight
         LSApplicationCategoryType: public.app-category.productivity
-        CFBundleShortVersionString: "0.2.0"
-        CFBundleVersion: "7"
+        CFBundleShortVersionString: "0.3.0"
+        CFBundleVersion: "10"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
@@ -95,3 +100,31 @@ targets:
             UTTypeDescription: Kairos Key Result
             UTTypeConformsTo:
               - public.data
+
+  KairosWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTargets:
+      iOS: "17.0"
+    sources:
+      - path: KairosWidget
+    settings:
+      base:
+        PRODUCT_NAME: KairosWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos.widget
+        SWIFT_VERSION: "5.9"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: 5Y9SADJQM9
+        CODE_SIGN_ENTITLEMENTS: KairosWidget/KairosWidget.entitlements
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../../Frameworks @executable_path/../../../Frameworks"
+    info:
+      path: KairosWidget/Info.plist
+      properties:
+        CFBundleDisplayName: FourOneEight Widget
+        CFBundleShortVersionString: "0.3.0"
+        CFBundleVersion: "10"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

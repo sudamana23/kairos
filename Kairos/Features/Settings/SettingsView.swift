@@ -4,16 +4,12 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(
-        filter: #Predicate<KairosYear> { $0.isArchived == false },
-        sort: \KairosYear.year, order: .reverse
-    ) private var years: [KairosYear]
-    @Query(
-        filter: #Predicate<KairosYear> { $0.isArchived == true },
-        sort: \KairosYear.year, order: .reverse
-    ) private var archivedYears: [KairosYear]
+    @Query(sort: \KairosYear.year, order: .reverse) private var allYears: [KairosYear]
+    private var years:         [KairosYear] { allYears.filter { !$0.isArchived } }
+    private var archivedYears: [KairosYear] { allYears.filter {  $0.isArchived } }
 
     @AppStorage("healthKitEnabled") private var healthKitEnabled = true
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
 
     @State private var showYearWizard = false
     @State private var expandedYears: Set<Int> = []
@@ -55,7 +51,17 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Archive Year") {
-                if let y = yearToArchive { y.isArchived = true; try? modelContext.save() }
+                if let y = yearToArchive {
+                    y.isArchived = true
+                    for domain in y.domains {
+                        domain.isArchived = true
+                        for obj in domain.objectives {
+                            obj.isArchived = true
+                            for kr in obj.keyResults { kr.isArchived = true }
+                        }
+                    }
+                    try? modelContext.save()
+                }
                 yearToArchive = nil
             }
             Button("Cancel", role: .cancel) { yearToArchive = nil }
@@ -83,7 +89,14 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Archive Domain") {
-                if let d = domainToArchive { d.isArchived = true; try? modelContext.save() }
+                if let d = domainToArchive {
+                    d.isArchived = true
+                    for obj in d.objectives {
+                        obj.isArchived = true
+                        for kr in obj.keyResults { kr.isArchived = true }
+                    }
+                    try? modelContext.save()
+                }
                 domainToArchive = nil
             }
             Button("Cancel", role: .cancel) { domainToArchive = nil }
@@ -110,8 +123,8 @@ struct SettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Everything", role: .destructive) {
-                for year in years { year.deleteWithChildren(in: modelContext) }
-                try? modelContext.save()
+                try? KairosExportManager.deleteAllData(in: modelContext)
+                hasCompletedOnboarding = false
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -374,6 +387,13 @@ struct SettingsView: View {
                                 Spacer()
                                 Button("Restore") {
                                     year.isArchived = false
+                                    for domain in year.domains {
+                                        domain.isArchived = false
+                                        for obj in domain.objectives {
+                                            obj.isArchived = false
+                                            for kr in obj.keyResults { kr.isArchived = false }
+                                        }
+                                    }
                                     try? modelContext.save()
                                 }
                                 .font(KairosTheme.Typography.caption)
@@ -435,15 +455,20 @@ struct SettingsView: View {
                             Text("Weekly Pulse reminder")
                                 .font(KairosTheme.Typography.body)
                                 .foregroundStyle(KairosTheme.Colors.textPrimary)
-                            Text("Every Monday at 9:00 AM")
+                            Text("Monday 9am · Wednesday nudge if not logged")
                                 .font(KairosTheme.Typography.caption)
                                 .foregroundStyle(KairosTheme.Colors.textMuted)
                         }
                     }
                     .toggleStyle(.switch)
                     .onChange(of: pulseNotifEnabled) { _, on in
-                        if on { NotificationManager.shared.scheduleWeeklyPulse() }
-                        else  { NotificationManager.shared.cancelWeeklyPulse() }
+                        if on {
+                            NotificationManager.shared.scheduleWeeklyPulse()
+                            NotificationManager.shared.scheduleWednesdayNudge()
+                        } else {
+                            NotificationManager.shared.cancelWeeklyPulse()
+                            NotificationManager.shared.cancelWednesdayNudge()
+                        }
                     }
 
                     KairosDivider()
@@ -531,11 +556,9 @@ struct SettingsView: View {
 
                 KairosDivider()
 
-                KairosDivider()
-
                 // Restart onboarding
                 Button {
-                    UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                    hasCompletedOnboarding = false
                 } label: {
                     HStack {
                         Image(systemName: "arrow.uturn.backward")

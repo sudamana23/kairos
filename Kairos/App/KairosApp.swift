@@ -99,34 +99,65 @@ struct KairosApp: App {
 struct RootContainerView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("isDarkMode") private var isDarkMode = true
+    @Query private var years: [KairosYear]
+    @Query private var pulses: [KairosWeeklyPulse]
+    // Session-only flag: set to true the moment the user taps "Continue to the app"
+    // so that years.isEmpty can't loop the onboarding back within the same launch.
+    @State private var forceShowApp = false
+
+    private var shouldOnboard: Bool {
+        !forceShowApp && (!hasCompletedOnboarding || years.isEmpty)
+    }
 
     var body: some View {
         Group {
-            if hasCompletedOnboarding {
-                AppRootView()
-            } else {
+            if shouldOnboard {
                 OnboardingView {
                     hasCompletedOnboarding = true
+                    forceShowApp = true
                 }
                 #if os(macOS)
                 .frame(minWidth: 600, minHeight: 500)
                 #endif
+            } else {
+                AppRootView()
             }
         }
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .onAppear { KairosTheme.Colors.isDark = isDarkMode }
         .onChange(of: isDarkMode) { _, v in KairosTheme.Colors.isDark = v }
+        #if os(iOS)
+        .onAppear { KairosWidgetBridge.write(years: years, pulses: pulses) }
+        .onChange(of: years.count)  { _, _ in KairosWidgetBridge.write(years: years, pulses: pulses) }
+        .onChange(of: pulses.count) { _, _ in KairosWidgetBridge.write(years: years, pulses: pulses) }
+        #endif
     }
 }
 
 // MARK: - AppRootView
 
 struct AppRootView: View {
-    // Optional so List(selection:) works on both macOS and iOS
     @State private var selection: KairosRoute? = .dashboard
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @AppStorage("isDarkMode") private var isDarkMode = true
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    #endif
 
     var body: some View {
+        #if os(iOS)
+        if hSizeClass == .compact {
+            iPhoneTabView
+        } else {
+            splitView
+        }
+        #else
+        splitView
+        #endif
+    }
+
+    // MARK: Sidebar split (iPad / Mac)
+    private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             KairosSidebar(selection: $selection)
                 .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 250)
@@ -150,6 +181,43 @@ struct AppRootView: View {
         case .settings:         SettingsView()
         }
     }
+
+    // MARK: Tab bar (iPhone)
+    #if os(iOS)
+    private var iPhoneTabView: some View {
+        TabView {
+            // Pulse — primary use case, opens first
+            NavigationStack {
+                PulseView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            SyncStatusBadge()
+                        }
+                    }
+            }
+            .tabItem { Label("Pulse", systemImage: "waveform") }
+
+            // Overview — domains, objectives, key results
+            NavigationStack {
+                PhoneOverviewView()
+            }
+            .tabItem { Label("Overview", systemImage: "square.grid.2x2") }
+
+            // Health — HealthKit capture, syncs to Mac via CloudKit
+            PhoneHealthTabView()
+                .tabItem { Label("Health", systemImage: "heart.fill") }
+
+            // Settings
+            NavigationStack {
+                SettingsView()
+                    .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+        }
+        .tint(KairosTheme.Colors.accent)
+    }
+    #endif
 }
 
 // MARK: - KairosRoute
@@ -170,6 +238,7 @@ struct KairosSidebar: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @Query private var allKeyResults: [KairosKeyResult]
+    @AppStorage("isDarkMode") private var isDarkMode = true
 
     private var current2026: KairosYear? { years.first { $0.year == 2026 } }
 
@@ -177,21 +246,35 @@ struct KairosSidebar: View {
         List(selection: $selection) {
 
             // MARK: Header
-            VStack(alignment: .leading, spacing: 2) {
-                Text("FOURONEIGHT")
-                    .font(KairosTheme.Typography.monoLarge)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    .tracking(3)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                if let intention = current2026?.intention, !intention.isEmpty {
-                    Text(intention)
-                        .font(KairosTheme.Typography.monoSmall)
-                        .foregroundStyle(KairosTheme.Colors.textMuted)
-                        .italic()
-                        .minimumScaleFactor(0.7)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("FOURONEIGHT")
+                        .font(KairosTheme.Typography.monoLarge)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        .tracking(3)
+                        .minimumScaleFactor(0.6)
                         .lineLimit(1)
+                    if let intention = current2026?.intention, !intention.isEmpty {
+                        Text(intention)
+                            .font(KairosTheme.Typography.monoSmall)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                            .italic()
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                    }
                 }
+                Spacer()
+                SyncStatusBadge()
+                Button {
+                    isDarkMode.toggle()
+                    KairosTheme.Colors.isDark = isDarkMode
+                } label: {
+                    Image(systemName: isDarkMode ? "sun.max" : "moon")
+                        .font(.caption)
+                        .foregroundStyle(isDarkMode ? Color(hex: "#FFD60A") : Color(hex: "#4A4A7A"))
+                }
+                .buttonStyle(.plain)
+                .help(isDarkMode ? "Switch to light mode" : "Switch to dark mode")
             }
             .padding(.vertical, KairosTheme.Spacing.sm)
             .listRowBackground(Color.clear)

@@ -245,13 +245,17 @@ enum KairosExportManager {
     // MARK: Delete all (used by onboarding replace-import)
 
     static func deleteAllData(in context: ModelContext) throws {
-        try context.delete(model: KairosMonthlyEntry.self)
-        try context.delete(model: KairosKeyResult.self)
-        try context.delete(model: KairosObjective.self)
-        try context.delete(model: KairosDomain.self)
-        try context.delete(model: KairosYear.self)
-        try context.delete(model: KairosWeeklyPulse.self)
-        try context.delete(model: KairosMonthlyReview.self)
+        // Must delete individually (not via context.delete(model:)) so SwiftData's
+        // change tracking fires and CloudKit propagates the deletions to other devices.
+        let years   = try context.fetch(FetchDescriptor<KairosYear>())
+        let pulses  = try context.fetch(FetchDescriptor<KairosWeeklyPulse>())
+        let reviews = try context.fetch(FetchDescriptor<KairosMonthlyReview>())
+
+        // Delete children first to avoid constraint violations
+        for year in years { year.deleteWithChildren(in: context) }
+        for pulse  in pulses  { context.delete(pulse) }
+        for review in reviews { context.delete(review) }
+
         try context.save()
     }
 
