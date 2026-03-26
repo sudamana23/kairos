@@ -140,9 +140,9 @@ struct YearWizardView: View {
                     }
                     .buttonStyle(.plain)
                     Text(String(targetYear))
-                        .font(KairosTheme.Typography.monoLarge)
+                        .font(KairosTheme.Typography.mono)
                         .foregroundStyle(KairosTheme.Colors.textPrimary)
-                        .frame(width: 56, alignment: .center)
+                        .frame(width: 64, alignment: .center)
                     Button { targetYear += 1 } label: {
                         Image(systemName: "plus.circle")
                             .font(.title3)

@@ -265,14 +265,29 @@ struct SettingsView: View {
         }
     }
 
+    @AppStorage("isDarkMode") private var isDarkMode = true
+
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
-            KairosLabel(text: "Settings")
-            Text("Data & Structure")
-                .font(KairosTheme.Typography.displayMedium)
-                .foregroundStyle(KairosTheme.Colors.textPrimary)
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
+                KairosLabel(text: "Settings")
+                Text("Data & Structure")
+                    .font(KairosTheme.Typography.displayMedium)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+            }
+            Spacer()
+            Button {
+                isDarkMode.toggle()
+                KairosTheme.Colors.isDark = isDarkMode
+            } label: {
+                Image(systemName: isDarkMode ? "sun.max" : "moon")
+                    .font(.body)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+            }
+            .buttonStyle(.plain)
+            .help(isDarkMode ? "Switch to light mode" : "Switch to dark mode")
         }
     }
 
@@ -839,23 +854,23 @@ private struct ObjectiveEditRow: View {
             Button {
                 confirmDelete = true
             } label: {
-                Image(systemName: "trash")
+                Image(systemName: "archivebox")
                     .font(.caption2)
                     .foregroundStyle(KairosTheme.Colors.textMuted)
             }
             .buttonStyle(.plain)
             .confirmationDialog(
-                "Delete \"\(objective.title)\"?",
+                "Archive \"\(objective.title)\"?",
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {
-                Button("Delete Objective & KRs", role: .destructive) {
-                    objective.deleteWithChildren(in: modelContext)
+                Button("Archive Objective") {
+                    objective.isArchived = true
                     try? modelContext.save()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This permanently deletes \(objective.keyResults.count) key result(s).")
+                Text("This hides the objective and its \(objective.keyResults.count) key result(s). Restore it from the Archive section in Settings.")
             }
         }
         .padding(.horizontal, KairosTheme.Spacing.sm)

@@ -98,18 +98,24 @@ struct KairosApp: App {
 
 struct RootContainerView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("isDarkMode") private var isDarkMode = true
 
     var body: some View {
-        if hasCompletedOnboarding {
-            AppRootView()
-        } else {
-            OnboardingView {
-                hasCompletedOnboarding = true
+        Group {
+            if hasCompletedOnboarding {
+                AppRootView()
+            } else {
+                OnboardingView {
+                    hasCompletedOnboarding = true
+                }
+                #if os(macOS)
+                .frame(minWidth: 600, minHeight: 500)
+                #endif
             }
-            #if os(macOS)
-            .frame(minWidth: 600, minHeight: 500)
-            #endif
         }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
+        .onAppear { KairosTheme.Colors.isDark = isDarkMode }
+        .onChange(of: isDarkMode) { _, v in KairosTheme.Colors.isDark = v }
     }
 }
 
@@ -250,7 +256,7 @@ struct KairosSidebar: View {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(KairosTheme.Colors.surface)
-        .foregroundStyle(KairosTheme.Colors.textSecondary)
+        .foregroundStyle(KairosTheme.Colors.textPrimary)
     }
 
     // MARK: - Move a KR into another domain's first objective

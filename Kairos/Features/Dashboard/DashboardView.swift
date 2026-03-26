@@ -61,13 +61,7 @@ struct DashboardView: View {
         return Array(repeating: GridItem(.flexible(), spacing: KairosTheme.Spacing.md), count: count)
     }
 
-    private var showHealthPanel: Bool {
-        #if os(macOS)
-        return healthKitEnabled && currentYear?.storedHealthSnapshot != nil
-        #else
-        return healthKitEnabled
-        #endif
-    }
+    private var showHealthPanel: Bool { healthKitEnabled }
 
     var body: some View {
         ScrollView {

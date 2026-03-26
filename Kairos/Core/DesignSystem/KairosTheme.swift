@@ -5,25 +5,29 @@ import SwiftUI
 enum KairosTheme {
 
     // MARK: - Colors
+    // isDark is set at launch and on toggle. All color properties are computed
+    // so every re-render picks up the latest value.
 
     enum Colors {
-        static let background      = Color(hex: "#0A0A0F")
-        static let surface         = Color(hex: "#13131A")
-        static let surfaceElevated = Color(hex: "#1C1C28")
-        static let border          = Color(hex: "#252535")
-        static let borderSubtle    = Color(hex: "#1C1C28")
+        static var isDark: Bool = true
 
-        static let textPrimary   = Color.white
-        static let textSecondary = Color(hex: "#9A9ABB")
-        static let textMuted     = Color(hex: "#6A6A85")
+        static var background:      Color { isDark ? Color(hex: "#0A0A0F") : Color(hex: "#F5F5F7") }
+        static var surface:         Color { isDark ? Color(hex: "#13131A") : Color(hex: "#FFFFFF") }
+        static var surfaceElevated: Color { isDark ? Color(hex: "#1C1C28") : Color(hex: "#EBEBF2") }
+        static var border:          Color { isDark ? Color(hex: "#252535") : Color(hex: "#D8D8E8") }
+        static var borderSubtle:    Color { isDark ? Color(hex: "#1C1C28") : Color(hex: "#EBEBF2") }
 
-        static let accent       = Color(hex: "#A8A8FF")
-        static let accentSubtle = Color(hex: "#A8A8FF").opacity(0.12)
+        static var textPrimary:   Color { isDark ? .white                  : Color(hex: "#0A0A18") }
+        static var textSecondary: Color { isDark ? Color(hex: "#9A9ABB")   : Color(hex: "#4A4A68") }
+        static var textMuted:     Color { isDark ? Color(hex: "#6A6A85")   : Color(hex: "#8A8AA5") }
+
+        static var accent:        Color { isDark ? Color(hex: "#A8A8FF")   : Color(hex: "#5050CC") }
+        static var accentSubtle:  Color { isDark ? Color(hex: "#A8A8FF").opacity(0.12) : Color(hex: "#5050CC").opacity(0.10) }
 
         static func status(_ s: KRStatus) -> Color {
             switch s {
-            case .notStarted:  return Color(hex: "#3A3A4A")
-            case .initialized: return Color(hex: "#5A5A7A")
+            case .notStarted:  return isDark ? Color(hex: "#3A3A4A") : Color(hex: "#AAAACC")
+            case .initialized: return isDark ? Color(hex: "#5A5A7A") : Color(hex: "#7A7A9A")
             case .inProgress:  return Color(hex: "#4A7AA8")
             case .done:        return Color(hex: "#4A9A6A")
             case .blocked:     return Color(hex: "#9A4A4A")
@@ -135,7 +139,6 @@ struct KairosDivider: View {
 }
 
 // MARK: - Touch Target Modifier
-// Ensures minimum 44×44pt tap area on iOS; no-op on macOS.
 
 extension View {
     @ViewBuilder func touchTarget() -> some View {
