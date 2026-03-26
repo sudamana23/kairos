@@ -6,6 +6,10 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
 
+    @AppStorage("ouraEnabled") private var ouraEnabled = true
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
+
+    @State private var showYearWizard = false
     @State private var expandedYears: Set<Int> = []
     @State private var yearToDelete: KairosYear?
     @State private var domainToDelete: KairosDomain?
@@ -25,6 +29,8 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xl) {
                 header
+                yearSetupSection
+                integrationsSection
                 yearsSection
                 notificationsSection
                 dataSection
@@ -104,6 +110,10 @@ struct SettingsView: View {
         } message: {
             Text(importAlertMsg ?? "")
         }
+        // MARK: Year Wizard
+        .sheet(isPresented: $showYearWizard) {
+            YearWizardView()
+        }
     }
 
     // MARK: - Export helpers
@@ -140,6 +150,86 @@ struct SettingsView: View {
         } catch {
             importAlertMsg  = error.localizedDescription
             showImportAlert = true
+        }
+    }
+
+    // MARK: - Year Setup Section
+
+    private var yearSetupSection: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            KairosLabel(text: "Year Setup")
+
+            Button {
+                showYearWizard = true
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(KairosTheme.Colors.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Set up a new year")
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        Text("Define domains, objectives, and key results")
+                            .font(KairosTheme.Typography.caption)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
+                    .stroke(KairosTheme.Colors.border, lineWidth: 1)
+            )
+        }
+    }
+
+    // MARK: - Integrations Section
+
+    private var integrationsSection: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            KairosLabel(text: "Health Integrations")
+
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
+                #if os(macOS)
+                Toggle(isOn: $ouraEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Oura Ring")
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        Text("Show health panel on dashboard")
+                            .font(KairosTheme.Typography.caption)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                }
+                .toggleStyle(.switch)
+                #else
+                Toggle(isOn: $healthKitEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Apple Health")
+                            .font(KairosTheme.Typography.body)
+                            .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        Text("Show health panel on dashboard")
+                            .font(KairosTheme.Typography.caption)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                }
+                .toggleStyle(.switch)
+                #endif
+            }
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
+                    .stroke(KairosTheme.Colors.border, lineWidth: 1)
+            )
         }
     }
 

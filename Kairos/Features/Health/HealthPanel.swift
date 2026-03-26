@@ -305,7 +305,7 @@ struct HealthPanel: View {
                 Text("Connect Apple Health")
                     .font(KairosTheme.Typography.headline)
                     .foregroundStyle(KairosTheme.Colors.textPrimary)
-                Text("Reads Oura data synced via iPhone Health app.")
+                Text("HRV, sleep, steps, and activity rings.")
                     .font(KairosTheme.Typography.caption)
                     .foregroundStyle(KairosTheme.Colors.textSecondary)
             }

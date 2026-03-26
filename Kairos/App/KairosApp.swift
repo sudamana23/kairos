@@ -106,7 +106,9 @@ struct RootContainerView: View {
             OnboardingView {
                 hasCompletedOnboarding = true
             }
+            #if os(macOS)
             .frame(minWidth: 600, minHeight: 500)
+            #endif
         }
     }
 }
@@ -174,11 +176,15 @@ struct KairosSidebar: View {
                     .font(KairosTheme.Typography.monoLarge)
                     .foregroundStyle(KairosTheme.Colors.textPrimary)
                     .tracking(3)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
                 if let intention = current2026?.intention, !intention.isEmpty {
                     Text(intention)
                         .font(KairosTheme.Typography.monoSmall)
                         .foregroundStyle(KairosTheme.Colors.textMuted)
                         .italic()
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
                 }
             }
             .padding(.vertical, KairosTheme.Spacing.sm)
@@ -201,9 +207,10 @@ struct KairosSidebar: View {
                 Section("2026") {
                     ForEach(year.sortedDomains) { domain in
                         HStack(spacing: KairosTheme.Spacing.sm) {
-                            Text(domain.emoji)
                             Text(domain.name)
                                 .foregroundStyle(KairosTheme.Colors.textPrimary)
+                                .minimumScaleFactor(0.75)
+                                .lineLimit(1)
                             Spacer()
                             ZStack {
                                 Circle()

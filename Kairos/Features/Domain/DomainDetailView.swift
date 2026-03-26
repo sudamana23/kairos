@@ -7,7 +7,7 @@ struct DomainDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @State private var selectedYear = 2026
-    @State private var expandedObjective: PersistentIdentifier?
+    @State private var expandedObjectives: Set<PersistentIdentifier> = []
 
     private var domain: KairosDomain? {
         years.first { $0.year == selectedYear }?
@@ -27,6 +27,11 @@ struct DomainDetailView: View {
             .padding(KairosTheme.Spacing.xl)
         }
         .background(KairosTheme.Colors.background)
+        .onAppear {
+            if let domain {
+                expandedObjectives = Set(domain.sortedObjectives.map { $0.id })
+            }
+        }
     }
 
     // MARK: - Header
@@ -74,12 +79,16 @@ struct DomainDetailView: View {
             ForEach(domain.sortedObjectives) { objective in
                 ObjectiveRow(
                     objective: objective,
-                    isExpanded: expandedObjective == objective.id,
+                    isExpanded: expandedObjectives.contains(objective.id),
                     moveDomainTargets: otherDomains,
                     allDomains: allDomains,
                     onTap: {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedObjective = expandedObjective == objective.id ? nil : objective.id
+                            if expandedObjectives.contains(objective.id) {
+                                expandedObjectives.remove(objective.id)
+                            } else {
+                                expandedObjectives.insert(objective.id)
+                            }
                         }
                     },
                     onMoveObjectiveTo: { target in
@@ -99,7 +108,7 @@ struct DomainDetailView: View {
                         objective.keyResults.append(newKR)
                         try? modelContext.save()
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedObjective = objective.id
+                            expandedObjectives.insert(objective.id)
                         }
                     }
                 )
@@ -115,7 +124,7 @@ struct DomainDetailView: View {
                 domain.objectives.append(newObj)
                 try? modelContext.save()
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    expandedObjective = newObj.id
+                    expandedObjectives.insert(newObj.id)
                 }
             } label: {
                 HStack(spacing: KairosTheme.Spacing.xs) {
@@ -271,7 +280,9 @@ struct ObjectiveRow: View {
                     .font(KairosTheme.Typography.caption)
                     .foregroundStyle(KairosTheme.Colors.textMuted)
                 }
+                #if os(macOS)
                 .menuStyle(.borderlessButton)
+                #endif
                 .fixedSize()
             }
 

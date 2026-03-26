@@ -44,12 +44,14 @@ targets:
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        TARGETED_DEVICE_FAMILY: "2"
+        TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"
         DEVELOPMENT_TEAM: 5Y9SADJQM9
         CODE_SIGN_ENTITLEMENTS: Kairos/Resources/Kairos.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Kairos/Resources/Kairos-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Kairos/Resources/Kairos-iOS.entitlements
         CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ARCHS: "$(ARCHS_STANDARD)"
         ONLY_ACTIVE_ARCH: NO
@@ -62,13 +64,23 @@ targets:
         CFBundleDisplayName: FourOneEight
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleVersion: "5"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - remote-notification
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
         NSHealthShareUsageDescription: "FourOneEight reads your health data to surface physiological context during life reviews."
-        NSMicrophoneUsageDescription: "Kairos uses the microphone for voice pulse check-ins and monthly review recordings."
-        NSSpeechRecognitionUsageDescription: "Kairos transcribes your voice notes on-device for weekly pulse check-ins."
+        NSHealthUpdateUsageDescription: "FourOneEight does not write health data."
+        NSMicrophoneUsageDescription: "FourOneEight uses the microphone for voice pulse check-ins and monthly review recordings."
+        NSSpeechRecognitionUsageDescription: "FourOneEight transcribes your voice notes on-device for weekly pulse check-ins."
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen:
+          UIColorName: ""
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - kairos

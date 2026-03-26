@@ -147,14 +147,14 @@ final class HealthKitManager: ObservableObject {
         monthlySnapshots = result
     }
 
-    private func buildSnapshot(endDate: Date, days: Int) async -> HealthSnapshot {
+    private nonisolated func buildSnapshot(endDate: Date, days: Int) async -> HealthSnapshot {
         let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) ?? endDate
         async let hrv      = queryQuantityAvg(.heartRateVariabilitySDNN, unit: HKUnit.secondUnit(with: .milli), start: startDate, end: endDate)
-        async let rhr      = queryQuantityAvg(.restingHeartRate, unit: HKUnit(from: "count/min"), start: startDate, end: endDate)
-        async let respRate = queryQuantityAvg(.respiratoryRate, unit: HKUnit(from: "count/min"), start: startDate, end: endDate)
+        async let rhr      = queryQuantityAvg(.restingHeartRate, unit: .count().unitDivided(by: .minute()), start: startDate, end: endDate)
+        async let respRate = queryQuantityAvg(.respiratoryRate, unit: .count().unitDivided(by: .minute()), start: startDate, end: endDate)
         async let steps    = queryQuantitySum(.stepCount, unit: HKUnit.count(), start: startDate, end: endDate, divideByDays: days)
         async let energy   = queryQuantitySum(.activeEnergyBurned, unit: HKUnit.kilocalorie(), start: startDate, end: endDate, divideByDays: days)
-        async let vo2      = queryQuantityLatest(.vo2Max, unit: HKUnit(from: "ml/kg/min"), start: startDate, end: endDate)
+        async let vo2      = queryQuantityLatest(.vo2Max, unit: .literUnit(with: .milli).unitDivided(by: HKUnit.gramUnit(with: .kilo)).unitDivided(by: .minute()), start: startDate, end: endDate)
         async let sleep    = querySleep(start: startDate, end: endDate)
         let (hrvVal, rhrVal, respVal, stepsVal, energyVal, vo2Val, sleepResult) = await (hrv, rhr, respRate, steps, energy, vo2, sleep)
         return HealthSnapshot(date: endDate, avgHRV: hrvVal, avgRHR: rhrVal, avgRespiratoryRate: respVal,
@@ -163,7 +163,7 @@ final class HealthKitManager: ObservableObject {
             avgDailySteps: stepsVal, avgActiveEnergy: energyVal, vo2Max: vo2Val, readinessScore: nil)
     }
 
-    private func queryQuantityAvg(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date) async -> Double? {
+    private nonisolated func queryQuantityAvg(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date) async -> Double? {
         guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return nil }
         return await withCheckedContinuation { cont in
             let q = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: HKQuery.predicateForSamples(withStart: start, end: end), options: .discreteAverage) { _, s, _ in
@@ -173,7 +173,7 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    private func queryQuantitySum(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date, divideByDays: Int = 1) async -> Double? {
+    private nonisolated func queryQuantitySum(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date, divideByDays: Int = 1) async -> Double? {
         guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return nil }
         return await withCheckedContinuation { cont in
             let q = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: HKQuery.predicateForSamples(withStart: start, end: end), options: .cumulativeSum) { _, s, _ in
@@ -184,7 +184,7 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    private func queryQuantityLatest(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date) async -> Double? {
+    private nonisolated func queryQuantityLatest(_ id: HKQuantityTypeIdentifier, unit: HKUnit, start: Date, end: Date) async -> Double? {
         guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return nil }
         return await withCheckedContinuation { cont in
             let q = HKSampleQuery(sampleType: type, predicate: HKQuery.predicateForSamples(withStart: start, end: end), limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, _ in
@@ -196,7 +196,7 @@ final class HealthKitManager: ObservableObject {
 
     private struct SleepResult { let lastNight, lastDeep, lastREM, average: Double? }
 
-    private func querySleep(start: Date, end: Date) async -> SleepResult {
+    private nonisolated func querySleep(start: Date, end: Date) async -> SleepResult {
         guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
             return SleepResult(lastNight: nil, lastDeep: nil, lastREM: nil, average: nil)
         }

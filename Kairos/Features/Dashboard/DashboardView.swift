@@ -36,6 +36,10 @@ struct DashboardView: View {
     @Query private var allKeyResults: [KairosKeyResult]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 
+    @AppStorage("ouraEnabled") private var ouraEnabled = true
+    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     @State private var selectedYear = 2026
     @State private var showingWizard = false
 
@@ -46,11 +50,18 @@ struct DashboardView: View {
 
     private var currentYear: KairosYear? { years.first { $0.year == selectedYear } }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: KairosTheme.Spacing.md),
-        GridItem(.flexible(), spacing: KairosTheme.Spacing.md),
-        GridItem(.flexible(), spacing: KairosTheme.Spacing.md)
-    ]
+    private var columns: [GridItem] {
+        let count = horizontalSizeClass == .compact ? 2 : 3
+        return Array(repeating: GridItem(.flexible(), spacing: KairosTheme.Spacing.md), count: count)
+    }
+
+    private var showHealthPanel: Bool {
+        #if os(macOS)
+        return ouraEnabled
+        #else
+        return healthKitEnabled
+        #endif
+    }
 
     var body: some View {
         ScrollView {
@@ -58,7 +69,7 @@ struct DashboardView: View {
                 header
                 if let year = currentYear {
                     overallProgress(for: year)
-                    HealthPanel()
+                    if showHealthPanel { HealthPanel() }
                     domainGrid(for: year)
                 } else {
                     emptyState
