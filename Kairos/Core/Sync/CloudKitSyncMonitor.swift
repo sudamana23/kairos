@@ -19,6 +19,7 @@ final class CloudKitSyncMonitor {
     }
 
     private(set) var state: SyncState = .idle
+    private(set) var lastError: String? = nil
     /// Incremented on every remote store change — views that read this
     /// will automatically re-render and pick up CloudKit-delivered deletions.
     private(set) var remoteChangeToken: Int = 0
@@ -38,8 +39,12 @@ final class CloudKitSyncMonitor {
                 self?.state = .syncing
             } else if event.succeeded {
                 self?.state = .synced
+                self?.lastError = nil
             } else {
+                let msg = event.error?.localizedDescription ?? "Unknown CloudKit error"
+                self?.lastError = msg
                 self?.state = .error
+                print("[CloudKit] Sync error: \(msg)")
             }
         }
 
@@ -86,6 +91,7 @@ struct SyncStatusBadge: View {
             case .error:
                 Image(systemName: "xmark.icloud")
                     .foregroundStyle(KairosTheme.Colors.status(.blocked))
+                    .help(monitor.lastError ?? "CloudKit sync error")
             }
         }
         .font(.caption)

@@ -4,6 +4,7 @@ import SwiftData
 struct PulseView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
+    private var syncMonitor: CloudKitSyncMonitor = .shared
 
     @State private var isCapturing = false
     @State private var energyLevel: Double = 5
@@ -32,6 +33,8 @@ struct PulseView: View {
             .padding(KairosTheme.Spacing.xl)
         }
         .background(KairosTheme.Colors.background)
+        // Re-render when CloudKit delivers remote changes (e.g. deletions from another device)
+        .id(syncMonitor.remoteChangeToken)
     }
 
     // MARK: - Header
@@ -277,6 +280,7 @@ struct PulseView: View {
         pulse.energyLevel = Int(energyLevel)
         pulse.tags = Array(selectedTags)
         pulse.note = note
+        pulse.transcription = recorder.transcript
         context.insert(pulse)
         try? context.save()
         // Cancel Wednesday nudge — pulse logged for this week
@@ -328,7 +332,7 @@ struct PulseHistoryRow: View {
     }()
 
     private var hasExpandableContent: Bool {
-        pulse.note.count > 60 || !pulse.transcription.isEmpty
+        !pulse.note.isEmpty || !pulse.transcription.isEmpty
     }
 
     var body: some View {

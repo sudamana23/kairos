@@ -31,6 +31,19 @@ struct PhoneHealthTabView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
         }
+        .task {
+            // Refresh health data every time the tab is opened so the snapshot stays current.
+            if hk.isAuthorized {
+                await hk.fetchCurrentSnapshot()
+            }
+        }
+        .onAppear {
+            // Save any snapshot already loaded (e.g. from a previous session).
+            if let snap = hk.snapshot, let year = currentYear {
+                year.storedHealthSnapshot = snap
+                try? modelContext.save()
+            }
+        }
         .onChange(of: hk.snapshot) { _, newSnap in
             guard let snap = newSnap, let year = currentYear else { return }
             year.storedHealthSnapshot = snap
@@ -38,15 +51,28 @@ struct PhoneHealthTabView: View {
         }
     }
 
+    private static let snapshotFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .short
+        return f
+    }()
+
     // Small informational note about cross-device sync
     private var syncNote: some View {
         HStack(spacing: KairosTheme.Spacing.sm) {
             Image(systemName: "arrow.triangle.2.circlepath")
                 .font(.caption)
                 .foregroundStyle(KairosTheme.Colors.accent)
-            Text("Health data captured here syncs to your Mac automatically via iCloud.")
-                .font(KairosTheme.Typography.caption)
-                .foregroundStyle(KairosTheme.Colors.textMuted)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Health data captured here syncs to your Mac via iCloud.")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                if let year = currentYear, year.latestHealthSnapshotCapturedAt > .distantPast {
+                    Text("Last synced \(Self.snapshotFormatter.localizedString(for: year.latestHealthSnapshotCapturedAt, relativeTo: Date()))")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted.opacity(0.7))
+                }
+            }
         }
         .padding(.horizontal, KairosTheme.Spacing.md)
         .padding(.vertical, KairosTheme.Spacing.sm)
