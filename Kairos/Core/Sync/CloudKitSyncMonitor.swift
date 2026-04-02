@@ -31,20 +31,24 @@ final class CloudKitSyncMonitor {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let event = notification.userInfo?[
-                NSPersistentCloudKitContainer.eventNotificationUserInfoKey
-            ] as? NSPersistentCloudKitContainer.Event else { return }
+            // queue: .main guarantees we are on the main thread; assert that for the compiler.
+            MainActor.assumeIsolated {
+                guard let self,
+                      let event = notification.userInfo?[
+                          NSPersistentCloudKitContainer.eventNotificationUserInfoKey
+                      ] as? NSPersistentCloudKitContainer.Event else { return }
 
-            if event.endDate == nil {
-                self?.state = .syncing
-            } else if event.succeeded {
-                self?.state = .synced
-                self?.lastError = nil
-            } else {
-                let msg = event.error?.localizedDescription ?? "Unknown CloudKit error"
-                self?.lastError = msg
-                self?.state = .error
-                print("[CloudKit] Sync error: \(msg)")
+                if event.endDate == nil {
+                    self.state = .syncing
+                } else if event.succeeded {
+                    self.state = .synced
+                    self.lastError = nil
+                } else {
+                    let msg = event.error?.localizedDescription ?? "Unknown CloudKit error"
+                    self.lastError = msg
+                    self.state = .error
+                    print("[CloudKit] Sync error: \(msg)")
+                }
             }
         }
 
@@ -56,7 +60,9 @@ final class CloudKitSyncMonitor {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.remoteChangeToken += 1
+            MainActor.assumeIsolated {
+                self?.remoteChangeToken += 1
+            }
         }
 
         observers = [syncObserver, remoteObserver]

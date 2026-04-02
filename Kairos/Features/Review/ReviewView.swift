@@ -254,7 +254,7 @@ struct ReviewView: View {
 
         let currentStatus   = pendingStatuses[kr.id]     ?? kr.currentStatus
         let currentRating   = pendingRatings[kr.id]      ?? kr.latestRating
-        let currentComment  = pendingCommentaries[kr.id] ?? kr.latestCommentary
+        let _ = pendingCommentaries[kr.id] ?? kr.latestCommentary
 
         return AnyView(
             VStack(spacing: 0) {

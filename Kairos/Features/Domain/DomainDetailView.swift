@@ -108,7 +108,7 @@ struct DomainDetailView: View {
                         modelContext.insert(newKR)
                         objective.keyResults.append(newKR)
                         try? modelContext.save()
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        _ = withAnimation(.easeInOut(duration: 0.2)) {
                             expandedObjectives.insert(objective.id)
                         }
                     }
@@ -124,7 +124,7 @@ struct DomainDetailView: View {
                 modelContext.insert(newObj)
                 domain.objectives.append(newObj)
                 try? modelContext.save()
-                withAnimation(.easeInOut(duration: 0.2)) {
+                _ = withAnimation(.easeInOut(duration: 0.2)) {
                     expandedObjectives.insert(newObj.id)
                 }
             } label: {
