@@ -24,11 +24,15 @@ struct SettingsView: View {
     @State private var reviewNotifEnabled = true
 
     // Export / Import
-    @State private var exportDocument  = KairosBackupDocument()
-    @State private var showExporter    = false
-    @State private var showImporter    = false
+    @State private var exportDocument       = KairosBackupDocument()
+    @State private var showExporter         = false
+    @State private var showImporter         = false
     @State private var importAlertMsg: String?
-    @State private var showImportAlert = false
+    @State private var showImportAlert      = false
+    // Restart-for-import
+    @State private var showRestartForImport = false
+    @State private var pendingImportData: Data?     = nil
+    @State private var pendingImportSummary: String = ""
 
     var body: some View {
         ScrollView {
@@ -163,6 +167,20 @@ struct SettingsView: View {
         } message: {
             Text(importAlertMsg ?? "")
         }
+        // MARK: Restart-for-import confirmation
+        // Wiping the CloudKit store before import guarantees CloudKit initialises
+        // cleanly on relaunch and pushes the imported records as brand-new — no
+        // stale tombstones, no zone-token conflicts, no Code=1011.
+        .alert("Restart to Import?", isPresented: $showRestartForImport) {
+            Button("Restart & Import", role: .destructive) {
+                if let data = pendingImportData {
+                    KairosApp.scheduleImportAndRestart(data: data)
+                }
+            }
+            Button("Cancel", role: .cancel) { pendingImportData = nil }
+        } message: {
+            Text("Found \(pendingImportSummary).\n\nThe app will restart so iCloud syncs cleanly. Your existing data is unchanged until the restart completes.")
+        }
         // MARK: Year Wizard
         .sheet(isPresented: $showYearWizard) {
             YearWizardView()
@@ -195,15 +213,26 @@ struct SettingsView: View {
         }
         defer { url.stopAccessingSecurityScopedResource() }
 
-        do {
-            let data   = try Data(contentsOf: url)
-            let result = try KairosExportManager.importBackup(from: data, into: modelContext)
-            importAlertMsg  = result.summary
+        guard let data = try? Data(contentsOf: url) else {
+            importAlertMsg  = "Could not read the file."
             showImportAlert = true
-        } catch {
-            importAlertMsg  = error.localizedDescription
-            showImportAlert = true
+            return
         }
+
+        // Validate the backup before committing to a restart
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let backup = try? decoder.decode(KairosBackup.self, from: data) else {
+            importAlertMsg  = "Import failed — the file may be corrupt or from an incompatible version."
+            showImportAlert = true
+            return
+        }
+
+        // Show restart confirmation; actual import happens on next launch via
+        // KairosApp.applyPendingImportIfNeeded, after a clean CloudKit init.
+        pendingImportData    = data
+        pendingImportSummary = "\(backup.years.count) year(s), \(backup.pulses.count) pulse(s), \(backup.reviews.count) review(s)"
+        showRestartForImport = true
     }
 
     // MARK: - Year Setup Section

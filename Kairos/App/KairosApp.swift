@@ -24,7 +24,10 @@ struct KairosApp: App {
 
     // MARK: - Container bootstrap (CloudKit → local → reset+local)
 
-    // Explicit store URL so the location is always predictable.
+    // CloudKit-backed store. IMPORTANT: this file must ONLY ever be opened with
+    // cloudKitDatabase: .private(…). Opening it in local-only mode corrupts
+    // CloudKit's internal metadata tables (history tokens, zone state), causing
+    // CKInternalErrorDomain Code=1011 on every subsequent launch.
     private static var storeURL: URL = {
         let fm = FileManager.default
         let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -33,12 +36,61 @@ struct KairosApp: App {
         return dir.appending(path: "kairos.store", directoryHint: .notDirectory)
     }()
 
+    // Separate file for the local-only fallback. Must be a different path from storeURL
+    // so the CloudKit store's metadata is never written by a non-CloudKit container.
+    private static var localStoreURL: URL = {
+        let fm = FileManager.default
+        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = support.appending(path: "com.damianspendel.kairos", directoryHint: .isDirectory)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appending(path: "kairos-local.store", directoryHint: .notDirectory)
+    }()
+
+    // JSON written here before a restart-for-import; consumed once on the next launch.
+    static var pendingImportURL: URL = {
+        let fm = FileManager.default
+        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = support.appending(path: "com.damianspendel.kairos", directoryHint: .isDirectory)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appending(path: "pending-import.json", directoryHint: .notDirectory)
+    }()
+
+    // MARK: - Import + restart
+
+    /// Save `data` for the next launch, wipe the CloudKit store so it
+    /// re-initialises cleanly, then terminate the process.
+    /// On relaunch the fresh CloudKit container is created first, then
+    /// `applyPendingImportIfNeeded` inserts the data — CloudKit pushes it all
+    /// as brand-new records with no stale tombstones or bad zone tokens.
+    static func scheduleImportAndRestart(data: Data) {
+        try? data.write(to: pendingImportURL)
+        deleteStore()   // wipe CloudKit metadata along with local data
+        exit(0)
+    }
+
+    // MARK: - Pending import (applied once on first launch after scheduleImportAndRestart)
+
+    static func applyPendingImportIfNeeded(context: ModelContext) {
+        let url = pendingImportURL
+        guard FileManager.default.fileExists(atPath: url.path),
+              let data = try? Data(contentsOf: url) else { return }
+        defer { try? FileManager.default.removeItem(at: url) }
+        do {
+            let result = try KairosExportManager.importBackup(from: data, into: context)
+            print("[Kairos] ✓ Applied pending import: \(result.summary)")
+        } catch {
+            print("[Kairos] ✗ Pending import failed: \(error)")
+        }
+    }
+
     private static func makeContainer(schema: Schema) -> ModelContainer {
         let cloudConfig = ModelConfiguration(
             url: storeURL,
             cloudKitDatabase: .private("iCloud.com.damianspendel.kairos")
         )
-        let localConfig = ModelConfiguration(url: storeURL, cloudKitDatabase: .none)
+        // Uses localStoreURL — a DIFFERENT file — so the CloudKit store is never
+        // opened in non-CloudKit mode, preserving its internal metadata.
+        let localConfig = ModelConfiguration(url: localStoreURL, cloudKitDatabase: .none)
 
         // 1. Try CloudKit sync
         do {
@@ -79,6 +131,9 @@ struct KairosApp: App {
             RootContainerView()
                 .modelContainer(modelContainer)
                 .task {
+                    // Apply a pending import from a previous restart-for-import operation.
+                    // Runs before notifications so CloudKit has the data immediately.
+                    Self.applyPendingImportIfNeeded(context: modelContainer.mainContext)
                     let granted = await NotificationManager.shared.requestPermission()
                     if granted { await NotificationManager.shared.scheduleAll() }
                 }
