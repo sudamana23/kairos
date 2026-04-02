@@ -48,7 +48,7 @@
 		2B58D6BCD64C7507CD74C769 /* KairosWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosWidget.swift; sourceTree = "<group>"; };
 		2B69A1E893EEDA5A88083AB5 /* HealthPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPanel.swift; sourceTree = "<group>"; };
 		38EF3A69505BD5FCFFB071B0 /* KairosWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KairosWidget.entitlements; sourceTree = "<group>"; };
-		3BA73F62BB8F048BB8550723 /* KairosWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KairosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BA73F62BB8F048BB8550723 /* KairosWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = KairosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		45776E726307E4B00C81E4C3 /* KairosModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosModels.swift; sourceTree = "<group>"; };
 		4A76FE310D5F8F56EA21A7B6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearWizardView.swift; sourceTree = "<group>"; };
@@ -74,7 +74,7 @@
 		CB57BC4BCB9466EE879F4836 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		D05D38BD6EA74A634C67FA8D /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		D09FE70294DDDF89D18B5FD0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		E43372EFD253509C9CD5A7F7 /* Kairos.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Kairos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E43372EFD253509C9CD5A7F7 /* FourOneEight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FourOneEight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
 		E93F1834F75DB8EDA9F4D149 /* KairosWidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosWidgetBridge.swift; sourceTree = "<group>"; };
 		ED9EE28F1431255888150ACB /* KairosWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosWidgetData.swift; sourceTree = "<group>"; };
@@ -122,7 +122,7 @@
 		16603435C979DC7297604C00 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E43372EFD253509C9CD5A7F7 /* Kairos.app */,
+				E43372EFD253509C9CD5A7F7 /* FourOneEight.app */,
 				3BA73F62BB8F048BB8550723 /* KairosWidget.appex */,
 			);
 			name = Products;
@@ -357,7 +357,7 @@
 			packageProductDependencies = (
 			);
 			productName = Kairos;
-			productReference = E43372EFD253509C9CD5A7F7 /* Kairos.app */;
+			productReference = E43372EFD253509C9CD5A7F7 /* FourOneEight.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6E8036D773F98BD3A9D3DDCC /* KairosWidget */ = {
@@ -384,14 +384,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					6CD36DBB9B1781513D7A5353 = {
-						DevelopmentTeam = 5Y9SADJQM9;
 						ProvisioningStyle = Automatic;
 					};
 					6E8036D773F98BD3A9D3DDCC = {
-						DevelopmentTeam = 5Y9SADJQM9;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -480,10 +478,14 @@
 				CODE_SIGN_ENTITLEMENTS = KairosWidget/KairosWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5Y9SADJQM9;
+				DEVELOPMENT_TEAM = 8VTBP868VA;
 				INFOPLIST_FILE = KairosWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks @executable_path/../../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.damianspendel.kairos.widget;
 				PRODUCT_NAME = KairosWidget;
 				SDKROOT = iphoneos;
@@ -527,9 +529,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 5Y9SADJQM9;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -548,6 +553,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -565,8 +571,13 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Kairos/Resources/Kairos-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5Y9SADJQM9;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8VTBP868VA;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -595,10 +606,14 @@
 				CODE_SIGN_ENTITLEMENTS = KairosWidget/KairosWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5Y9SADJQM9;
+				DEVELOPMENT_TEAM = 8VTBP868VA;
 				INFOPLIST_FILE = KairosWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../../Frameworks @executable_path/../../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.damianspendel.kairos.widget;
 				PRODUCT_NAME = KairosWidget;
 				SDKROOT = iphoneos;
@@ -642,9 +657,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 5Y9SADJQM9;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -656,6 +674,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -673,8 +692,13 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Kairos/Resources/Kairos-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 5Y9SADJQM9;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8VTBP868VA;
+				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
