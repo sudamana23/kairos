@@ -6,6 +6,10 @@ struct KairosApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        // Initialise the sync monitor before the container so its observer
+        // is registered before CloudKit starts firing events.
+        _ = CloudKitSyncMonitor.shared
+
         let schema = Schema([
             KairosYear.self,
             KairosDomain.self,
