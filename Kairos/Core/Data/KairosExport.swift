@@ -261,7 +261,9 @@ enum KairosExportManager {
 
     // MARK: Import (merge by UUID — safe to run multiple times)
 
-    /// Restore a backup, skipping any objects whose UUID already exists in the store.
+    /// Restore a backup. Always assigns fresh UUIDs so CloudKit tombstones from a
+    /// prior Reset All Data never conflict with incoming records. Dedup is content-based:
+    /// years by year-number, pulses by date (within 1 min), reviews by year+month.
     @discardableResult
     static func importBackup(from data: Data, into context: ModelContext) throws -> KairosImportResult {
         let decoder = JSONDecoder()
@@ -278,19 +280,18 @@ enum KairosExportManager {
             throw KairosExportError.versionMismatch(backup.version)
         }
 
-        // Collect existing IDs to avoid duplicates
-        let existingYearIDs    = Set((try? context.fetch(FetchDescriptor<KairosYear>()))?.map          { $0.id } ?? [])
-        let existingPulseIDs   = Set((try? context.fetch(FetchDescriptor<KairosWeeklyPulse>()))?.map   { $0.id } ?? [])
-        let existingReviewIDs  = Set((try? context.fetch(FetchDescriptor<KairosMonthlyReview>()))?.map { $0.id } ?? [])
+        // Content-based dedup keys (UUIDs are NOT reused — avoids CloudKit tombstone conflicts)
+        let existingYearNumbers = Set((try? context.fetch(FetchDescriptor<KairosYear>()))?.map    { $0.year } ?? [])
+        let existingPulseDates  = Set((try? context.fetch(FetchDescriptor<KairosWeeklyPulse>()))?.map { $0.date.timeIntervalSince1970 } ?? [])
+        let existingReviewKeys  = Set((try? context.fetch(FetchDescriptor<KairosMonthlyReview>()))?.map { "\($0.year)-\($0.month)" } ?? [])
 
         var yearsAdded = 0, pulsesAdded = 0, reviewsAdded = 0
 
         // --- Years (full cascade hierarchy) ---
         for dto in backup.years {
-            guard !existingYearIDs.contains(dto.id) else { continue }
+            guard !existingYearNumbers.contains(dto.year) else { continue }
 
             let year = KairosYear(year: dto.year, intention: dto.intention)
-            year.id  = dto.id
             context.insert(year)
 
             for dDto in dto.domains {
@@ -299,19 +300,16 @@ enum KairosExportManager {
                     identityStatement: dDto.identityStatement,
                     sortOrder: dDto.sortOrder, colorHex: dDto.colorHex
                 )
-                domain.id = dDto.id
                 context.insert(domain)
                 year.domains.append(domain)
 
                 for oDto in dDto.objectives {
                     let obj = KairosObjective(title: oDto.title, sortOrder: oDto.sortOrder)
-                    obj.id  = oDto.id
                     context.insert(obj)
                     domain.objectives.append(obj)
 
                     for krDto in oDto.keyResults {
                         let kr = KairosKeyResult(title: krDto.title, sortOrder: krDto.sortOrder)
-                        kr.id  = krDto.id
                         context.insert(kr)
                         obj.keyResults.append(kr)
 
@@ -321,7 +319,6 @@ enum KairosExportManager {
                                 status: KRStatus(rawValue: eDto.status) ?? .notStarted,
                                 rating: eDto.rating, commentary: eDto.commentary
                             )
-                            entry.id = eDto.id
                             context.insert(entry)
                             kr.entries.append(entry)
                         }
@@ -331,32 +328,32 @@ enum KairosExportManager {
             yearsAdded += 1
         }
 
-        // --- Weekly pulses ---
+        // --- Weekly pulses (dedup within 60 seconds of an existing pulse date) ---
         for dto in backup.pulses {
-            guard !existingPulseIDs.contains(dto.id) else { continue }
+            let t = dto.date.timeIntervalSince1970
+            let isDuplicate = existingPulseDates.contains { abs($0 - t) < 60 }
+            guard !isDuplicate else { continue }
             let pulse = KairosWeeklyPulse(date: dto.date)
-            pulse.id            = dto.id
-            pulse.energyLevel   = dto.energyLevel
-            pulse.tagsRaw       = dto.tagsRaw
-            pulse.transcription = dto.transcription
-            pulse.note          = dto.note
+            pulse.energyLevel    = dto.energyLevel
+            pulse.tagsRaw        = dto.tagsRaw
+            pulse.transcription  = dto.transcription
+            pulse.note           = dto.note
             pulse.sentimentScore = dto.sentimentScore
-            pulse.audioFileName = dto.audioFileName
+            pulse.audioFileName  = dto.audioFileName
             context.insert(pulse)
             pulsesAdded += 1
         }
 
         // --- Monthly reviews ---
         for dto in backup.reviews {
-            guard !existingReviewIDs.contains(dto.id) else { continue }
+            guard !existingReviewKeys.contains("\(dto.year)-\(dto.month)") else { continue }
             let review = KairosMonthlyReview(year: dto.year, month: dto.month)
-            review.id             = dto.id
-            review.transcript     = dto.transcript
-            review.summaryPoint1  = dto.summaryPoint1
-            review.summaryPoint2  = dto.summaryPoint2
-            review.summaryPoint3  = dto.summaryPoint3
-            review.audioFileName  = dto.audioFileName
-            review.createdAt      = dto.createdAt
+            review.transcript    = dto.transcript
+            review.summaryPoint1 = dto.summaryPoint1
+            review.summaryPoint2 = dto.summaryPoint2
+            review.summaryPoint3 = dto.summaryPoint3
+            review.audioFileName = dto.audioFileName
+            review.createdAt     = dto.createdAt
             context.insert(review)
             reviewsAdded += 1
         }
