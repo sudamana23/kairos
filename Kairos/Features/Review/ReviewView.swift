@@ -18,6 +18,9 @@ struct ReviewView: View {
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 
     @StateObject private var intelligence = IntelligenceManager.shared
+    // Reading isDarkMode forces a re-render when the mode toggles,
+    // so KairosTheme.Colors.* computed vars pick up the new isDark value.
+    @AppStorage("isDarkMode") private var isDarkMode = true
 
     // Phase
     @State private var phase: ReviewPhase = .overview

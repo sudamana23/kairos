@@ -202,11 +202,11 @@ struct SettingsView: View {
         }
 
         do {
-            let result = try KairosExportManager.importBackup(from: data, into: modelContext)
-            importAlertMsg  = result.summary
+            _ = try KairosExportManager.importBackup(from: data, into: modelContext)
+            importAlertMsg  = "Import successful."
             showImportAlert = true
         } catch {
-            importAlertMsg  = error.localizedDescription
+            importAlertMsg  = "Import failed: \(error.localizedDescription)"
             showImportAlert = true
         }
     }
@@ -470,7 +470,7 @@ struct SettingsView: View {
                         Image(systemName: "bell.slash")
                             .font(.caption)
                             .foregroundStyle(KairosTheme.Colors.textMuted)
-                        Text("Notifications are disabled. Enable them in System Settings → Notifications → Kairos.")
+                        Text("Notifications are disabled. Enable them in System Settings → Notifications → Tenets.")
                             .font(KairosTheme.Typography.caption)
                             .foregroundStyle(KairosTheme.Colors.textMuted)
                     }

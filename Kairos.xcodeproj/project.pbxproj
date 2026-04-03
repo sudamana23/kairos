@@ -54,7 +54,7 @@
 		C3357591E2906E01CB815682 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosTheme.swift; sourceTree = "<group>"; };
 		D05D38BD6EA74A634C67FA8D /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
-		E43372EFD253509C9CD5A7F7 /* Kairos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kairos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E43372EFD253509C9CD5A7F7 /* Tenets.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tenets.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
 		F4B5D9AC9F70E9F3935883B2 /* CloudKitSyncMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSyncMonitor.swift; sourceTree = "<group>"; };
 		F52AEC332166DFAE5DB88F37 /* KairosExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosExport.swift; sourceTree = "<group>"; };
@@ -98,7 +98,7 @@
 		16603435C979DC7297604C00 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E43372EFD253509C9CD5A7F7 /* Kairos.app */,
+				E43372EFD253509C9CD5A7F7 /* Tenets.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -297,7 +297,7 @@
 			packageProductDependencies = (
 			);
 			productName = Kairos;
-			productReference = E43372EFD253509C9CD5A7F7 /* Kairos.app */;
+			productReference = E43372EFD253509C9CD5A7F7 /* Tenets.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -310,7 +310,6 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					6CD36DBB9B1781513D7A5353 = {
-						DevelopmentTeam = 5Y9SADJQM9;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -531,7 +530,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = 5Y9SADJQM9;
+				DEVELOPMENT_TEAM = 8VTBP868VA;
 				"ENABLE_APP_SANDBOX[sdk=macosx*]" = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Kairos/Resources/Info.plist;

@@ -140,15 +140,15 @@ struct OnboardingView: View {
     private var rhythmStep: some View {
         centeredContent {
             stepHeader(
-                title: "The rhythm",
-                subtitle: "Three cadences. Each serves a different purpose."
+                title: "Living by your values",
+                subtitle: "Three check-ins that keep your daily life aligned with what matters most."
             )
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
-                rhythmRow(cadence: "Each year",  description: "Define your domains, objectives, and key results. Set an intention — a word or phrase that anchors the year.")
+                rhythmRow(cadence: "Each year",  description: "Set domains and key results that serve your values — not just what seems productive. One intention anchors the year.")
                 KairosDivider()
-                rhythmRow(cadence: "Each month", description: "A structured review. What moved. What didn't. Why. Recorded as a voice note and summarised on-device.")
+                rhythmRow(cadence: "Each month", description: "Reflect honestly on each domain. Where were you aligned? Where did you drift? A short conversation surfaces the truth.")
                 KairosDivider()
-                rhythmRow(cadence: "Each week",  description: "A brief pulse. Energy level, themes, a short note. Takes two minutes. Compounds over time.")
+                rhythmRow(cadence: "Each week",  description: "A brief pulse: energy, themes, alignment. Two minutes. The compound effect of staying honest with yourself.")
             }
             .padding(KairosTheme.Spacing.md)
             .background(KairosTheme.Colors.surface)

@@ -8,6 +8,7 @@ struct ValuesView: View {
     @State private var showDiscovery = false
     @State private var editingValue: KairosValue?
     @State private var showAddValue = false
+    @State private var selectedValue: KairosValue?
 
     var body: some View {
         ScrollView {
@@ -50,6 +51,7 @@ struct ValuesView: View {
         .sheet(isPresented: $showDiscovery) { ValuesDiscoveryView() }
         .sheet(item: $editingValue) { v in ValueEditSheet(value: v) }
         .sheet(isPresented: $showAddValue) { ValueAddSheet() }
+        .sheet(item: $selectedValue) { v in ValueDomainSheet(value: v) }
     }
 
     private var emptyState: some View {
@@ -76,6 +78,7 @@ struct ValuesView: View {
             ForEach(values) { value in
                 ValueRow(
                     value: value,
+                    onTap: { selectedValue = value },
                     onEdit: { editingValue = value },
                     onDelete: { deleteValue(value) }
                 )
@@ -98,6 +101,7 @@ struct ValuesView: View {
 
 private struct ValueRow: View {
     let value: KairosValue
+    let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
 
@@ -155,14 +159,20 @@ private struct ValueRow: View {
                 .buttonStyle(.plain)
                 .help("Delete value")
             }
+
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(KairosTheme.Colors.border)
         }
         .padding(KairosTheme.Spacing.md)
-        .background(KairosTheme.Colors.surface)
+        .background(isHovered ? KairosTheme.Colors.surfaceElevated : KairosTheme.Colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
         .overlay(
             RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
-                .stroke(KairosTheme.Colors.border, lineWidth: 1)
+                .stroke(isHovered ? KairosTheme.Colors.accent.opacity(0.3) : KairosTheme.Colors.border, lineWidth: 1)
         )
+        .contentShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+        .onTapGesture { onTap() }
         .onHover { isHovered = $0 }
     }
 }
@@ -343,4 +353,106 @@ private func valueForm(
     }
     .background(KairosTheme.Colors.background)
     .frame(minWidth: 420, minHeight: 420)
+}
+
+// MARK: - ValueDomainSheet
+
+private struct ValueDomainSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let value: KairosValue
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                HStack(spacing: KairosTheme.Spacing.sm) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(hex: value.colorHex.isEmpty ? "#4A9A6A" : value.colorHex))
+                        .frame(width: 4, height: 20)
+                    Text(value.name)
+                        .font(KairosTheme.Typography.monoLarge)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                }
+                Spacer()
+                Button("Done") { dismiss() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(KairosTheme.Colors.accent)
+            }
+            .padding(KairosTheme.Spacing.xl)
+
+            KairosDivider()
+
+            if !value.reflection.isEmpty {
+                Text(value.reflection)
+                    .font(KairosTheme.Typography.body)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, KairosTheme.Spacing.xl)
+                    .padding(.top, KairosTheme.Spacing.lg)
+            }
+
+            let domains = value.domains.filter { !$0.isArchived }
+            if domains.isEmpty {
+                VStack(spacing: KairosTheme.Spacing.md) {
+                    Spacer()
+                    Text("No domains assigned to this value yet.")
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .multilineTextAlignment(.center)
+                    Text("Drag a domain onto this value in the sidebar to assign it.")
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .multilineTextAlignment(.center)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(KairosTheme.Spacing.xl)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+                        KairosLabel(text: "\(domains.count) domain\(domains.count == 1 ? "" : "s")")
+                            .padding(.top, KairosTheme.Spacing.lg)
+                        ForEach(domains) { domain in
+                            HStack(spacing: KairosTheme.Spacing.md) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(domain.name)
+                                        .font(KairosTheme.Typography.headline)
+                                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                                    let krCount = domain.allKeyResults.count
+                                    let done = domain.completedCount
+                                    Text("\(done)/\(krCount) key results · \(Int(domain.progress * 100))%")
+                                        .font(KairosTheme.Typography.monoSmall)
+                                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                                }
+                                Spacer()
+                                // Mini progress arc
+                                ZStack {
+                                    Circle()
+                                        .stroke(KairosTheme.Colors.border, lineWidth: 3)
+                                    Circle()
+                                        .trim(from: 0, to: domain.progress)
+                                        .stroke(
+                                            Color(hex: value.colorHex.isEmpty ? "#4A9A6A" : value.colorHex),
+                                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                        )
+                                        .rotationEffect(.degrees(-90))
+                                }
+                                .frame(width: 28, height: 28)
+                            }
+                            .padding(KairosTheme.Spacing.md)
+                            .background(KairosTheme.Colors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
+                                    .stroke(KairosTheme.Colors.border, lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(KairosTheme.Spacing.xl)
+                }
+            }
+        }
+        .background(KairosTheme.Colors.background)
+        .frame(minWidth: 400, minHeight: 340)
+    }
 }
