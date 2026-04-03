@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CloudKit
 
 @main
 struct KairosApp: App {
@@ -57,14 +58,46 @@ struct KairosApp: App {
 
     // MARK: - Import + restart
 
-    /// Save `data` for the next launch, wipe the CloudKit store so it
-    /// re-initialises cleanly, then terminate the process.
-    /// On relaunch the fresh CloudKit container is created first, then
-    /// `applyPendingImportIfNeeded` inserts the data — CloudKit pushes it all
-    /// as brand-new records with no stale tombstones or bad zone tokens.
-    static func scheduleImportAndRestart(data: Data) {
+    /// Save `data` for the next launch, wipe the local CloudKit store AND delete
+    /// the server-side zone, then terminate the process.
+    ///
+    /// Deleting the zone server-side:
+    /// - Forces ALL devices to invalidate their local CloudKit caches
+    /// - Allows the Mac (even if its CloudKit init was stuck in Code=1011) to
+    ///   reset and pull down the fresh data after relaunch
+    /// - Removes any zombie/stale records from previous failed sync attempts
+    ///
+    /// On relaunch: fresh local store → CloudKit creates a new zone → pending
+    /// import is applied → CloudKit pushes everything via initial-export, which
+    /// handles large batches cleanly. Other devices get a zone-change
+    /// notification and download from scratch.
+    static func scheduleImportAndRestart(data: Data) async {
         try? data.write(to: pendingImportURL)
-        deleteStore()   // wipe CloudKit metadata along with local data
+        deleteStore()
+        await deleteCloudKitZone()
+        exit(0)
+    }
+
+    private static func deleteCloudKitZone() async {
+        let container = CKContainer(identifier: "iCloud.com.damianspendel.kairos")
+        let zoneID = CKRecordZone.ID(
+            zoneName: "com.apple.coredata.cloudkit.zone",
+            ownerName: CKCurrentUserDefaultName
+        )
+        do {
+            try await container.privateCloudDatabase.deleteRecordZone(withID: zoneID)
+            print("[Kairos] ✓ Deleted CloudKit zone — will be recreated fresh on relaunch")
+        } catch {
+            // Zone may not exist yet (e.g. CloudKit never successfully initialised)
+            print("[Kairos] CloudKit zone delete skipped: \(error.localizedDescription)")
+        }
+    }
+
+    /// Wipe the local CloudKit store and restart. Use on a device where CloudKit
+    /// is stuck (red badge) after another device has already imported and uploaded.
+    /// The device will re-download everything from iCloud on the next launch.
+    static func resetSyncAndRestart() {
+        deleteStore()
         exit(0)
     }
 

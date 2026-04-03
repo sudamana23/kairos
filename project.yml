@@ -70,7 +70,7 @@ targets:
         CFBundleDisplayName: FourOneEight
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "16"
+        CFBundleVersion: "17"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes:
@@ -127,6 +127,6 @@ targets:
       properties:
         CFBundleDisplayName: FourOneEight Widget
         CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "16"
+        CFBundleVersion: "17"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
