@@ -185,7 +185,7 @@ struct SettingsView: View {
         .alert("Restart to Import?", isPresented: $showRestartForImport) {
             Button("Restart & Import", role: .destructive) {
                 if let data = pendingImportData {
-                    Task { await KairosApp.scheduleImportAndRestart(data: data) }
+                    KairosApp.scheduleImportAndRestart(data: data)
                 }
             }
             Button("Cancel", role: .cancel) { pendingImportData = nil }

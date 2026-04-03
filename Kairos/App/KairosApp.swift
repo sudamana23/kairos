@@ -11,6 +11,20 @@ struct KairosApp: App {
         // is registered before CloudKit starts firing events.
         _ = CloudKitSyncMonitor.shared
 
+        // If a zone deletion was scheduled by scheduleImportAndRestart, complete it
+        // NOW — before creating the ModelContainer — so CloudKit starts with a
+        // clean slate. We block init briefly (max 10 s) using a DispatchGroup.
+        if UserDefaults.standard.bool(forKey: "pendingZoneDeletion") {
+            UserDefaults.standard.set(false, forKey: "pendingZoneDeletion")
+            let group = DispatchGroup()
+            group.enter()
+            Task.detached {
+                await Self.deleteCloudKitZone()
+                group.leave()
+            }
+            _ = group.wait(timeout: .now() + 10)
+        }
+
         let schema = Schema([
             KairosYear.self,
             KairosDomain.self,
@@ -72,10 +86,13 @@ struct KairosApp: App {
     /// import is applied → CloudKit pushes everything via initial-export, which
     /// handles large batches cleanly. Other devices get a zone-change
     /// notification and download from scratch.
-    static func scheduleImportAndRestart(data: Data) async {
+    /// Save `data` for next launch, flag zone deletion, wipe local store, exit.
+    /// Zone deletion happens at the TOP of the next init() — before the container
+    /// is created — so CloudKit starts completely fresh with no stale state.
+    static func scheduleImportAndRestart(data: Data) {
         try? data.write(to: pendingImportURL)
+        UserDefaults.standard.set(true, forKey: "pendingZoneDeletion")
         deleteStore()
-        await deleteCloudKitZone()
         exit(0)
     }
 
@@ -165,8 +182,15 @@ struct KairosApp: App {
             RootContainerView()
                 .modelContainer(modelContainer)
                 .task {
-                    // Apply a pending import from a previous restart-for-import operation.
-                    // Runs before notifications so CloudKit has the data immediately.
+                    // If a pending import exists, wait for CloudKit to finish its
+                    // initial zone setup (first .synced event) before inserting data.
+                    // This prevents the import overwhelming CloudKit mid-initialisation.
+                    if FileManager.default.fileExists(atPath: Self.pendingImportURL.path) {
+                        for _ in 0..<20 {
+                            if CloudKitSyncMonitor.shared.state == .synced { break }
+                            try? await Task.sleep(for: .seconds(1))
+                        }
+                    }
                     Self.applyPendingImportIfNeeded(context: modelContainer.mainContext)
                     let granted = await NotificationManager.shared.requestPermission()
                     if granted { await NotificationManager.shared.scheduleAll() }
@@ -339,51 +363,72 @@ struct KairosSidebar: View {
             .listRowBackground(Color.clear)
 
             // MARK: Domains — grouped by value
+            // Each value is a full-width list row (drop target for domain reassignment).
+            // Domains appear as indented rows beneath their value.
             if let year = current2026 {
-                // Per-value sections
-                ForEach(values) { value in
-                    let valueDomains = year.sortedDomains.filter { $0.value?.id == value.id }
-                    if !valueDomains.isEmpty {
-                        Section {
-                            ForEach(valueDomains) { domain in
-                                domainRow(domain)
-                            }
-                        } header: {
-                            Text("\(value.emoji) \(value.name)")
-                                .font(KairosTheme.Typography.monoSmall)
-                                .foregroundStyle(KairosTheme.Colors.textMuted)
-                                .dropDestination(for: DomainValueDrop.self) { items, _ in
-                                    guard let item = items.first else { return false }
-                                    assignDomain(id: item.domainID, toValue: value)
-                                    return true
-                                }
-                        }
-                        .listRowBackground(Color.clear)
-                    }
-                }
-
-                // Unassigned section
-                let unassigned = year.sortedDomains.filter { $0.value == nil }
-                if !unassigned.isEmpty || values.isEmpty {
+                if !values.isEmpty {
                     Section {
-                        ForEach(values.isEmpty ? year.sortedDomains : unassigned) { domain in
-                            domainRow(domain)
+                        ForEach(values) { value in
+                            // Value row — full-width drop target
+                            HStack(spacing: KairosTheme.Spacing.sm) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color(hex: value.colorHex).opacity(0.8))
+                                    .frame(width: 3, height: 14)
+                                Text(value.name.uppercased())
+                                    .font(KairosTheme.Typography.monoSmall)
+                                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                                    .tracking(1)
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                            .dropDestination(for: DomainValueDrop.self) { items, _ in
+                                guard let item = items.first else { return false }
+                                assignDomain(id: item.domainID, toValue: value)
+                                return true
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+
+                            // Domain children under this value
+                            ForEach(year.sortedDomains.filter { $0.value?.id == value.id }) { domain in
+                                domainRow(domain).padding(.leading, KairosTheme.Spacing.sm)
+                            }
                         }
-                    } header: {
-                        if !values.isEmpty {
-                            Text("Unassigned")
-                                .font(KairosTheme.Typography.monoSmall)
-                                .foregroundStyle(KairosTheme.Colors.textMuted)
-                                .dropDestination(for: DomainValueDrop.self) { items, _ in
-                                    guard let item = items.first else { return false }
-                                    assignDomain(id: item.domainID, toValue: nil)
-                                    return true
-                                }
-                        } else {
-                            Text("2026")
-                                .font(KairosTheme.Typography.monoSmall)
-                                .foregroundStyle(KairosTheme.Colors.textMuted)
+
+                        // Unassigned domains
+                        let unassigned = year.sortedDomains.filter { $0.value == nil }
+                        if !unassigned.isEmpty {
+                            HStack(spacing: KairosTheme.Spacing.sm) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(KairosTheme.Colors.border)
+                                    .frame(width: 3, height: 14)
+                                Text("UNASSIGNED")
+                                    .font(KairosTheme.Typography.monoSmall)
+                                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                                    .tracking(1)
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                            .dropDestination(for: DomainValueDrop.self) { items, _ in
+                                guard let item = items.first else { return false }
+                                assignDomain(id: item.domainID, toValue: nil)
+                                return true
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+
+                            ForEach(unassigned) { domain in
+                                domainRow(domain).padding(.leading, KairosTheme.Spacing.sm)
+                            }
                         }
+                    }
+                    .listRowBackground(Color.clear)
+                } else {
+                    // No values defined yet — flat domain list under year header
+                    Section(String(year.year)) {
+                        ForEach(year.sortedDomains) { domain in domainRow(domain) }
                     }
                     .listRowBackground(Color.clear)
                 }
