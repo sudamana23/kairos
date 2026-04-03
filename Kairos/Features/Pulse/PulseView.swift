@@ -10,6 +10,7 @@ struct PulseView: View {
     @State private var energyLevel: Double = 5
     @State private var selectedTags: Set<PulseTag> = []
     @State private var note = ""
+    @State private var valuesAlignment: Int = 0
     @State private var recorder = VoiceRecorder()
 
     private var thisWeekPulse: KairosWeeklyPulse? {
@@ -99,6 +100,37 @@ struct PulseView: View {
                 }
                 Slider(value: $energyLevel, in: 1...10, step: 1)
                     .tint(energyColor)
+            }
+
+            KairosDivider()
+
+            // Values Alignment
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+                Text("Values Alignment")
+                    .font(KairosTheme.Typography.monoSmall)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
+                HStack(spacing: KairosTheme.Spacing.sm) {
+                    ForEach(1...5, id: \.self) { i in
+                        Button {
+                            valuesAlignment = (valuesAlignment == i) ? 0 : i
+                        } label: {
+                            Circle()
+                                .fill(i <= valuesAlignment ? KairosTheme.Colors.accent : KairosTheme.Colors.border)
+                                .frame(width: 28, height: 28)
+                                .overlay(
+                                    Text("\(i)")
+                                        .font(KairosTheme.Typography.monoSmall)
+                                        .foregroundStyle(i <= valuesAlignment ? Color.white : KairosTheme.Colors.textMuted)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if valuesAlignment > 0 {
+                        Text(alignmentLabel(valuesAlignment))
+                            .font(KairosTheme.Typography.monoSmall)
+                            .foregroundStyle(KairosTheme.Colors.textMuted)
+                    }
+                }
             }
 
             KairosDivider()
@@ -277,10 +309,11 @@ struct PulseView: View {
 
     private func savePulse() {
         let pulse = KairosWeeklyPulse(date: Date())
-        pulse.energyLevel = Int(energyLevel)
-        pulse.tags = Array(selectedTags)
-        pulse.note = note
+        pulse.energyLevel   = Int(energyLevel)
+        pulse.tags          = Array(selectedTags)
+        pulse.note          = note
         pulse.transcription = recorder.transcript
+        pulse.valuesAlignment = valuesAlignment
         context.insert(pulse)
         try? context.save()
         // Cancel Wednesday nudge — pulse logged for this week
@@ -292,7 +325,19 @@ struct PulseView: View {
         energyLevel = 5
         selectedTags = []
         note = ""
+        valuesAlignment = 0
         recorder.reset()
+    }
+
+    private func alignmentLabel(_ score: Int) -> String {
+        switch score {
+        case 1: return "Off track"
+        case 2: return "Slightly off"
+        case 3: return "Neutral"
+        case 4: return "Aligned"
+        case 5: return "Deeply aligned"
+        default: return ""
+        }
     }
 }
 

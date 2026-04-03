@@ -18,7 +18,8 @@ struct KairosApp: App {
             KairosKeyResult.self,
             KairosMonthlyEntry.self,
             KairosWeeklyPulse.self,
-            KairosMonthlyReview.self
+            KairosMonthlyReview.self,
+            KairosValue.self
         ])
         modelContainer = Self.makeContainer(schema: schema)
     }
@@ -242,6 +243,7 @@ struct AppRootView: View {
     private func routeView(for route: KairosRoute) -> some View {
         switch route {
         case .dashboard:        DashboardView(navigate: { selection = $0 })
+        case .values:           ValuesView()
         case .pulse:            PulseView()
         case .review:           ReviewView()
         case .timeMachine:      TimeMachineView()
@@ -256,11 +258,21 @@ struct AppRootView: View {
 
 enum KairosRoute: Hashable {
     case dashboard
+    case values
     case pulse
     case review
     case timeMachine
     case domain(String)
     case settings
+}
+
+// MARK: - DomainValueDrop
+
+struct DomainValueDrop: Transferable, Codable {
+    let domainID: String
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .kairosDomainDrop)
+    }
 }
 
 // MARK: - KairosSidebar
@@ -270,6 +282,7 @@ struct KairosSidebar: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @Query private var allKeyResults: [KairosKeyResult]
+    @Query(sort: \KairosValue.sortOrder) private var values: [KairosValue]
     @AppStorage("isDarkMode") private var isDarkMode = true
 
     private var current2026: KairosYear? { years.first { $0.year == 2026 } }
@@ -316,6 +329,8 @@ struct KairosSidebar: View {
             Section {
                 Label("Dashboard", systemImage: "square.grid.2x2")
                     .tag(KairosRoute.dashboard)
+                Label("Values", systemImage: "sparkles")
+                    .tag(KairosRoute.values)
                 Label("Weekly Pulse", systemImage: "waveform")
                     .tag(KairosRoute.pulse)
                 Label("Monthly Review", systemImage: "bubble.left.and.bubble.right")
@@ -323,35 +338,55 @@ struct KairosSidebar: View {
             }
             .listRowBackground(Color.clear)
 
-            // MARK: Domains
+            // MARK: Domains — grouped by value
             if let year = current2026 {
-                Section("2026") {
-                    ForEach(year.sortedDomains) { domain in
-                        HStack(spacing: KairosTheme.Spacing.sm) {
-                            Text(domain.name)
-                                .foregroundStyle(KairosTheme.Colors.textPrimary)
-                                .minimumScaleFactor(0.75)
-                                .lineLimit(1)
-                            Spacer()
-                            ZStack {
-                                Circle()
-                                    .stroke(KairosTheme.Colors.border, lineWidth: 2)
-                                Circle()
-                                    .trim(from: 0, to: domain.progress)
-                                    .stroke(KairosTheme.Colors.domain(domain.name), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                                    .rotationEffect(.degrees(-90))
+                // Per-value sections
+                ForEach(values) { value in
+                    let valueDomains = year.sortedDomains.filter { $0.value?.id == value.id }
+                    if !valueDomains.isEmpty {
+                        Section {
+                            ForEach(valueDomains) { domain in
+                                domainRow(domain)
                             }
-                            .frame(width: 16, height: 16)
+                        } header: {
+                            Text("\(value.emoji) \(value.name)")
+                                .font(KairosTheme.Typography.monoSmall)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                                .dropDestination(for: DomainValueDrop.self) { items, _ in
+                                    guard let item = items.first else { return false }
+                                    assignDomain(id: item.domainID, toValue: value)
+                                    return true
+                                }
                         }
-                        .tag(KairosRoute.domain(domain.name))
-                        .dropDestination(for: KRDrop.self) { items, _ in
-                            guard let krID = items.first?.krID else { return false }
-                            moveKR(id: krID, toDomain: domain)
-                            return true
-                        }
+                        .listRowBackground(Color.clear)
                     }
                 }
-                .listRowBackground(Color.clear)
+
+                // Unassigned section
+                let unassigned = year.sortedDomains.filter { $0.value == nil }
+                if !unassigned.isEmpty || values.isEmpty {
+                    Section {
+                        ForEach(values.isEmpty ? year.sortedDomains : unassigned) { domain in
+                            domainRow(domain)
+                        }
+                    } header: {
+                        if !values.isEmpty {
+                            Text("Unassigned")
+                                .font(KairosTheme.Typography.monoSmall)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                                .dropDestination(for: DomainValueDrop.self) { items, _ in
+                                    guard let item = items.first else { return false }
+                                    assignDomain(id: item.domainID, toValue: nil)
+                                    return true
+                                }
+                        } else {
+                            Text("2026")
+                                .font(KairosTheme.Typography.monoSmall)
+                                .foregroundStyle(KairosTheme.Colors.textMuted)
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                }
             }
 
             // MARK: Analysis
@@ -372,6 +407,44 @@ struct KairosSidebar: View {
         .scrollContentBackground(.hidden)
         .background(KairosTheme.Colors.surface)
         .foregroundStyle(KairosTheme.Colors.textPrimary)
+    }
+
+    // MARK: - Domain row helper
+
+    @ViewBuilder
+    private func domainRow(_ domain: KairosDomain) -> some View {
+        HStack(spacing: KairosTheme.Spacing.sm) {
+            Text(domain.name)
+                .foregroundStyle(KairosTheme.Colors.textPrimary)
+                .minimumScaleFactor(0.75)
+                .lineLimit(1)
+            Spacer()
+            ZStack {
+                Circle()
+                    .stroke(KairosTheme.Colors.border, lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: domain.progress)
+                    .stroke(KairosTheme.Colors.domain(domain.name), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
+            .frame(width: 16, height: 16)
+        }
+        .tag(KairosRoute.domain(domain.name))
+        .draggable(DomainValueDrop(domainID: domain.id.uuidString))
+        .dropDestination(for: KRDrop.self) { items, _ in
+            guard let krID = items.first?.krID else { return false }
+            moveKR(id: krID, toDomain: domain)
+            return true
+        }
+    }
+
+    // MARK: - Assign domain to value
+
+    private func assignDomain(id: String, toValue value: KairosValue?) {
+        guard let uuid = UUID(uuidString: id),
+              let domain = current2026?.domains.first(where: { $0.id == uuid }) else { return }
+        domain.value = value
+        try? modelContext.save()
     }
 
     // MARK: - Move a KR into another domain's first objective

@@ -11,6 +11,7 @@
 		06609779676F65E29F09FEFF /* KairosModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45776E726307E4B00C81E4C3 /* KairosModels.swift */; };
 		19627B09651E16118A885449 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 959B6E492A6F6EE70009A1E2 /* Assets.xcassets */; };
 		31390F23E6C1994D3EB6B988 /* YearWizardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */; };
+		3879B06CC1AF37435261BB47 /* ValuesDiscoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4A2F78B3174DBADB539530 /* ValuesDiscoveryView.swift */; };
 		3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */; };
 		40307F763177F607660F7FFA /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9115EA9AF8705CF2A7B5A38 /* ReviewView.swift */; };
 		40B7117085D5E8927C7C54BC /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */; };
@@ -28,11 +29,16 @@
 		BAC5B10010F3A0EC4CB1D454 /* VoiceRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664C332C0649616FB0EB5F29 /* VoiceRecorder.swift */; };
 		BF1CF59F001B7CAE01621C94 /* KairosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF341935C3B2CBC215BC7E16 /* KairosApp.swift */; };
 		E3C86BB8154D6AF0C549329B /* DomainDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A802C70405445110405CB258 /* DomainDetailView.swift */; };
+		F8F823069C71F26BB2290D52 /* KairosValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28247BF8A65F33F91C44E72F /* KairosValue.swift */; };
+		FB70D6039F84DC87993D0B24 /* ValuesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00963076FD5DB5E9077657EB /* ValuesView.swift */; };
 		FC1662F0F10D5400F4873BB1 /* CloudKitSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B5D9AC9F70E9F3935883B2 /* CloudKitSyncMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00963076FD5DB5E9077657EB /* ValuesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValuesView.swift; sourceTree = "<group>"; };
 		1647A8684DE1BAF6C2747703 /* PulseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseView.swift; sourceTree = "<group>"; };
+		28247BF8A65F33F91C44E72F /* KairosValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosValue.swift; sourceTree = "<group>"; };
+		3B4A2F78B3174DBADB539530 /* ValuesDiscoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValuesDiscoveryView.swift; sourceTree = "<group>"; };
 		45776E726307E4B00C81E4C3 /* KairosModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosModels.swift; sourceTree = "<group>"; };
 		4A76FE310D5F8F56EA21A7B6 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		630E95F6E8CB6DE4A97B3F3E /* YearWizardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearWizardView.swift; sourceTree = "<group>"; };
@@ -111,6 +117,7 @@
 				47FC9B8760DDD4CB8ECDB24C /* Review */,
 				E2342E3899AA847EA00886C7 /* Settings */,
 				98F79592B3320F6A377FBF7C /* TimeMachine */,
+				E632AB7261CC01B7B2C5FE86 /* Values */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -235,6 +242,7 @@
 			isa = PBXGroup;
 			children = (
 				45776E726307E4B00C81E4C3 /* KairosModels.swift */,
+				28247BF8A65F33F91C44E72F /* KairosValue.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -263,6 +271,15 @@
 				C3357591E2906E01CB815682 /* SettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		E632AB7261CC01B7B2C5FE86 /* Values */ = {
+			isa = PBXGroup;
+			children = (
+				3B4A2F78B3174DBADB539530 /* ValuesDiscoveryView.swift */,
+				00963076FD5DB5E9077657EB /* ValuesView.swift */,
+			);
+			path = Values;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -345,6 +362,7 @@
 				A499B7170613BC36E1069E71 /* KairosExport.swift in Sources */,
 				06609779676F65E29F09FEFF /* KairosModels.swift in Sources */,
 				3C7C1BC7633479C86F903E44 /* KairosTheme.swift in Sources */,
+				F8F823069C71F26BB2290D52 /* KairosValue.swift in Sources */,
 				6D72A5890900286E28E0ECD6 /* NotificationManager.swift in Sources */,
 				05BDB55862F46EEEFBD6BD47 /* OnboardingView.swift in Sources */,
 				7A593F55783067B82DB36BD7 /* PulseView.swift in Sources */,
@@ -352,6 +370,8 @@
 				611068D42F6058A48B70C549 /* SeedData.swift in Sources */,
 				577C85CFAA1EC327C072856B /* SettingsView.swift in Sources */,
 				B0C831A0B764CB84F550DA2B /* TimeMachineView.swift in Sources */,
+				3879B06CC1AF37435261BB47 /* ValuesDiscoveryView.swift in Sources */,
+				FB70D6039F84DC87993D0B24 /* ValuesView.swift in Sources */,
 				BAC5B10010F3A0EC4CB1D454 /* VoiceRecorder.swift in Sources */,
 				31390F23E6C1994D3EB6B988 /* YearWizardView.swift in Sources */,
 			);

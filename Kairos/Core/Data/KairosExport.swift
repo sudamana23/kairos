@@ -11,13 +11,15 @@ struct KairosBackup: Codable {
     var years: [YearDTO]
     var pulses: [PulseDTO]
     var reviews: [ReviewDTO]
+    var values: [ValueDTO]?   // optional for backwards compat with older backups
 
-    init(years: [YearDTO], pulses: [PulseDTO], reviews: [ReviewDTO]) {
+    init(years: [YearDTO], pulses: [PulseDTO], reviews: [ReviewDTO], values: [ValueDTO] = []) {
         self.version    = 1
         self.exportedAt = Date()
         self.years      = years
         self.pulses     = pulses
         self.reviews    = reviews
+        self.values     = values
     }
 
     // MARK: Nested DTOs
@@ -37,6 +39,7 @@ struct KairosBackup: Codable {
         var sortOrder: Int
         var colorHex: String
         var objectives: [ObjectiveDTO]
+        var value: String?  // value name; nil or "" = unassigned; optional for backwards compat
     }
 
     struct ObjectiveDTO: Codable {
@@ -71,6 +74,16 @@ struct KairosBackup: Codable {
         var note: String
         var sentimentScore: Double
         var audioFileName: String
+        var valuesAlignment: Int?   // optional for backwards compat; defaults to 0
+    }
+
+    struct ValueDTO: Codable {
+        var id: UUID
+        var name: String
+        var reflection: String
+        var emoji: String
+        var colorHex: String
+        var sortOrder: Int
     }
 
     struct ReviewDTO: Codable {
@@ -103,7 +116,8 @@ extension KairosDomain {
             id: id, name: name, emoji: emoji,
             identityStatement: identityStatement,
             sortOrder: sortOrder, colorHex: colorHex,
-            objectives: sortedObjectives.map { $0.toDTO() }
+            objectives: sortedObjectives.map { $0.toDTO() },
+            value: value?.name ?? ""
         )
     }
 }
@@ -141,8 +155,15 @@ extension KairosWeeklyPulse {
             id: id, date: date, energyLevel: energyLevel,
             tagsRaw: tagsRaw, transcription: transcription,
             note: note, sentimentScore: sentimentScore,
-            audioFileName: audioFileName
+            audioFileName: audioFileName,
+            valuesAlignment: valuesAlignment
         )
+    }
+}
+
+extension KairosValue {
+    func toDTO() -> KairosBackup.ValueDTO {
+        KairosBackup.ValueDTO(id: id, name: name, reflection: reflection, emoji: emoji, colorHex: colorHex, sortOrder: sortOrder)
     }
 }
 
@@ -224,11 +245,13 @@ enum KairosExportManager {
     static func makeBackupData(years: [KairosYear], context: ModelContext) throws -> Data {
         let pulses  = (try? context.fetch(FetchDescriptor<KairosWeeklyPulse>())) ?? []
         let reviews = (try? context.fetch(FetchDescriptor<KairosMonthlyReview>())) ?? []
+        let values  = (try? context.fetch(FetchDescriptor<KairosValue>(sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
 
         let backup = KairosBackup(
             years:   years.map   { $0.toDTO() },
             pulses:  pulses.map  { $0.toDTO() },
-            reviews: reviews.map { $0.toDTO() }
+            reviews: reviews.map { $0.toDTO() },
+            values:  values.map  { $0.toDTO() }
         )
 
         let encoder = JSONEncoder()
@@ -250,11 +273,13 @@ enum KairosExportManager {
         let years   = try context.fetch(FetchDescriptor<KairosYear>())
         let pulses  = try context.fetch(FetchDescriptor<KairosWeeklyPulse>())
         let reviews = try context.fetch(FetchDescriptor<KairosMonthlyReview>())
+        let values  = try context.fetch(FetchDescriptor<KairosValue>())
 
         // Delete children first to avoid constraint violations
         for year in years { year.deleteWithChildren(in: context) }
-        for pulse  in pulses  { context.delete(pulse) }
-        for review in reviews { context.delete(review) }
+        for pulse   in pulses   { context.delete(pulse) }
+        for review  in reviews  { context.delete(review) }
+        for value   in values   { context.delete(value) }
 
         try context.save()
     }
@@ -281,11 +306,24 @@ enum KairosExportManager {
         }
 
         // Content-based dedup keys (UUIDs are NOT reused — avoids CloudKit tombstone conflicts)
-        let existingYearNumbers = Set((try? context.fetch(FetchDescriptor<KairosYear>()))?.map    { $0.year } ?? [])
-        let existingPulseDates  = Set((try? context.fetch(FetchDescriptor<KairosWeeklyPulse>()))?.map { $0.date.timeIntervalSince1970 } ?? [])
-        let existingReviewKeys  = Set((try? context.fetch(FetchDescriptor<KairosMonthlyReview>()))?.map { "\($0.year)-\($0.month)" } ?? [])
+        let existingYearNumbers  = Set((try? context.fetch(FetchDescriptor<KairosYear>()))?.map    { $0.year } ?? [])
+        let existingPulseDates   = Set((try? context.fetch(FetchDescriptor<KairosWeeklyPulse>()))?.map { $0.date.timeIntervalSince1970 } ?? [])
+        let existingReviewKeys   = Set((try? context.fetch(FetchDescriptor<KairosMonthlyReview>()))?.map { "\($0.year)-\($0.month)" } ?? [])
+        let existingValueNames   = Set((try? context.fetch(FetchDescriptor<KairosValue>()))?.map { $0.name } ?? [])
 
         var yearsAdded = 0, pulsesAdded = 0, reviewsAdded = 0
+
+        // --- Values (dedup by name, import first so domains can reference them) ---
+        // Build a name→model map that includes both pre-existing and newly imported values
+        var valueByName: [String: KairosValue] = Dictionary(
+            uniqueKeysWithValues: ((try? context.fetch(FetchDescriptor<KairosValue>())) ?? []).map { ($0.name, $0) }
+        )
+        for dto in backup.values ?? [] {
+            guard !existingValueNames.contains(dto.name) else { continue }
+            let v = KairosValue(name: dto.name, reflection: dto.reflection, emoji: dto.emoji, colorHex: dto.colorHex, sortOrder: dto.sortOrder)
+            context.insert(v)
+            valueByName[dto.name] = v
+        }
 
         // --- Years (full cascade hierarchy) ---
         for dto in backup.years {
@@ -300,6 +338,10 @@ enum KairosExportManager {
                     identityStatement: dDto.identityStatement,
                     sortOrder: dDto.sortOrder, colorHex: dDto.colorHex
                 )
+                // Assign value by name if present
+                if let valueName = dDto.value, !valueName.isEmpty {
+                    domain.value = valueByName[valueName]
+                }
                 context.insert(domain)
                 year.domains.append(domain)
 
@@ -340,6 +382,7 @@ enum KairosExportManager {
             pulse.note           = dto.note
             pulse.sentimentScore = dto.sentimentScore
             pulse.audioFileName  = dto.audioFileName
+            pulse.valuesAlignment = dto.valuesAlignment ?? 0
             context.insert(pulse)
             pulsesAdded += 1
         }

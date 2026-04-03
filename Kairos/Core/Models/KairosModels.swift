@@ -65,6 +65,8 @@ final class KairosDomain {
     var colorHex: String = ""
     var isArchived: Bool = false
 
+    var value: KairosValue?   // nil = unassigned
+
     var year: KairosYear?
 
     @Relationship(deleteRule: .nullify, inverse: \KairosObjective.domain)
@@ -224,6 +226,8 @@ final class KairosWeeklyPulse {
     var sentimentScore: Double = 0
     var audioFileName: String = ""
     var isArchived: Bool = false
+    /// 0 = not rated, 1–5 = alignment with personal values this week
+    var valuesAlignment: Int = 0
 
     init(date: Date = Date()) {
         self.date = date
