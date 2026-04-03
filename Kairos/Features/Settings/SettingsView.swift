@@ -9,6 +9,7 @@ struct SettingsView: View {
     private var archivedYears: [KairosYear] { allYears.filter {  $0.isArchived } }
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
+    @AppStorage("fontScale") private var fontScale: Double = 1.0
 
     @State private var showYearWizard = false
     @State private var expandedYears: Set<Int> = []
@@ -33,6 +34,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xl) {
                 header
+                appearanceSection
                 yearSetupSection
                 yearsSection
                 archiveSection
@@ -206,6 +208,71 @@ struct SettingsView: View {
         } catch {
             importAlertMsg  = error.localizedDescription
             showImportAlert = true
+        }
+    }
+
+    // MARK: - Appearance Section
+
+    private let fontScaleSteps: [Double] = [0.85, 1.0, 1.15, 1.3]
+    private var fontScaleLabel: String {
+        switch fontScale {
+        case ..<0.9:  return "Small"
+        case ..<1.07: return "Default"
+        case ..<1.22: return "Large"
+        default:      return "Extra Large"
+        }
+    }
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
+            KairosLabel(text: "Appearance")
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Text size")
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    Text(fontScaleLabel)
+                        .font(KairosTheme.Typography.caption)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                }
+                Spacer()
+                HStack(spacing: KairosTheme.Spacing.sm) {
+                    Button {
+                        if let idx = fontScaleSteps.firstIndex(of: fontScale), idx > 0 {
+                            fontScale = fontScaleSteps[idx - 1]
+                        }
+                    } label: {
+                        Image(systemName: "textformat.size.smaller")
+                            .foregroundStyle(fontScale <= fontScaleSteps.first! ? KairosTheme.Colors.border : KairosTheme.Colors.textMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(fontScale <= fontScaleSteps.first!)
+
+                    Text("A")
+                        .font(.system(size: CGFloat(14 * fontScale), weight: .regular))
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .frame(width: 24, alignment: .center)
+
+                    Button {
+                        if let idx = fontScaleSteps.firstIndex(of: fontScale), idx < fontScaleSteps.count - 1 {
+                            fontScale = fontScaleSteps[idx + 1]
+                        }
+                    } label: {
+                        Image(systemName: "textformat.size.larger")
+                            .foregroundStyle(fontScale >= fontScaleSteps.last! ? KairosTheme.Colors.border : KairosTheme.Colors.textMuted)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(fontScale >= fontScaleSteps.last!)
+                }
+            }
+            .padding(KairosTheme.Spacing.md)
+            .background(KairosTheme.Colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
+            .overlay(
+                RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
+                    .stroke(KairosTheme.Colors.border, lineWidth: 1)
+            )
         }
     }
 

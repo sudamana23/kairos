@@ -34,6 +34,7 @@ struct YearWizardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var years: [KairosYear]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
+    @Query(sort: \KairosValue.sortOrder) private var values: [KairosValue]
 
     @State private var step = 0
     @State private var targetYear: Int
@@ -41,8 +42,10 @@ struct YearWizardView: View {
     @State private var domains: [WizardDomain] = []
     @State private var blindspot = ""
     @State private var reviewText = ""
+    @State private var yearReflection = ""
     @State private var isLoading = false
     @State private var loadingMessage = ""
+    @State private var showValuesDiscovery = false
 
     private let stepLabels = ["Setup", "Domains", "Objectives", "Key Results", "Review"]
 
@@ -81,6 +84,9 @@ struct YearWizardView: View {
         }
         .background(KairosTheme.Colors.background)
         .frame(minWidth: 660, minHeight: 520)
+        .sheet(isPresented: $showValuesDiscovery) {
+            ValuesDiscoveryView()
+        }
     }
 
     // MARK: - Top Bar
@@ -170,6 +176,25 @@ struct YearWizardView: View {
                         RoundedRectangle(cornerRadius: KairosTheme.Radius.sm)
                             .stroke(KairosTheme.Colors.border, lineWidth: 1)
                     )
+            }
+
+            // Open reflection — fed directly into the domain AI prompt
+            VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
+                KairosLabel(text: "What's on your mind for \(targetYear)? (optional)")
+                TextEditor(text: $yearReflection)
+                    .font(KairosTheme.Typography.body)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
+                    .scrollContentBackground(.hidden)
+                    .background(KairosTheme.Colors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: KairosTheme.Radius.sm)
+                            .stroke(KairosTheme.Colors.border, lineWidth: 1)
+                    )
+                    .frame(minHeight: 80, maxHeight: 140)
+                Text("Anything that matters — a theme, a challenge, a hope. The AI will reflect this in your domains.")
+                    .font(KairosTheme.Typography.caption)
+                    .foregroundStyle(KairosTheme.Colors.textMuted)
             }
 
             // Previous year summary
@@ -513,11 +538,20 @@ struct YearWizardView: View {
             prevSummary = "no prior data"
         }
 
+        let valuesSummary = values.isEmpty ? "none defined yet" :
+            values.map { "\($0.name)\($0.reflection.isEmpty ? "" : ": \($0.reflection)")" }.joined(separator: "; ")
+
+        let reflectionSection = yearReflection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? ""
+            : "\nWhat they have on their mind for \(targetYear): \(yearReflection)"
+
         let prompt = """
-        Year plan setup for \(targetYear). Previous year: \(prevSummary).
-        Propose 6-7 life domains using Wheel of Life / Maslow.
+        Year plan setup for \(targetYear).
+        This person's core values: \(valuesSummary).
+        Previous year domains: \(prevSummary).\(reflectionSection)
+        Propose 5-6 life domains that serve these values, reflect their history, and honour what they have on their mind.
         For each, one line: [emoji] [Name] | [8-word max note on why this year]
-        End with one line: BLINDSPOT: [gap in coverage, 10 words max]
+        End with one line: BLINDSPOT: [gap in coverage given their values, 10 words max]
         No other text. No numbering.
         """
 
@@ -546,9 +580,14 @@ struct YearWizardView: View {
             }.joined(separator: "\n")
         }
 
+        let yearContext = [
+            prevContext.isEmpty ? nil : "Context from last year:\n\(prevContext)",
+            yearReflection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : "What they have on their mind: \(yearReflection)"
+        ].compactMap { $0 }.joined(separator: "\n")
+
         let prompt = """
         Propose 2 clear objectives for each domain in \(targetYear).
-        Domains: \(domainList)\(prevContext.isEmpty ? "" : "\nContext from last year:\n\(prevContext)")
+        Domains: \(domainList)\(yearContext.isEmpty ? "" : "\n\(yearContext)")
         Output ONLY this exact format with no extra text:
         \(domains.filter { $0.enabled }.map { "\($0.name)\n- Objective one\n- Objective two" }.joined(separator: "\n"))
         Replace the placeholder objectives with real ones. Keep the domain names exactly as given.
@@ -824,6 +863,12 @@ struct YearWizardView: View {
         }
 
         try? modelContext.save()
-        dismiss()
+
+        // If no values exist yet, open the values discovery wizard before dismissing
+        if values.isEmpty {
+            showValuesDiscovery = true
+        } else {
+            dismiss()
+        }
     }
 }

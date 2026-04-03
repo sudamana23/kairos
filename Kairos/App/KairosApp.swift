@@ -66,13 +66,14 @@ struct KairosApp: App {
 struct RootContainerView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("isDarkMode") private var isDarkMode = true
+    @AppStorage("fontScale") private var fontScale: Double = 1.0
     @Query private var years: [KairosYear]
     // Session-only flag: set to true the moment the user taps "Continue to the app"
     // so that years.isEmpty can't loop the onboarding back within the same launch.
     @State private var forceShowApp = false
 
     private var shouldOnboard: Bool {
-        !forceShowApp && (!hasCompletedOnboarding || years.isEmpty)
+        !forceShowApp && !hasCompletedOnboarding
     }
 
     var body: some View {
@@ -85,11 +86,22 @@ struct RootContainerView: View {
                 .frame(minWidth: 600, minHeight: 500)
             } else {
                 AppRootView()
+                    // Changing fontScale recreates AppRootView, refreshing all Typography
+                    .id(fontScale)
             }
         }
         .preferredColorScheme(isDarkMode ? .dark : .light)
-        .onAppear { KairosTheme.Colors.isDark = isDarkMode }
+        .onAppear {
+            KairosTheme.Colors.isDark = isDarkMode
+            KairosTheme.Typography.scale = CGFloat(fontScale)
+        }
         .onChange(of: isDarkMode) { _, v in KairosTheme.Colors.isDark = v }
+        .onChange(of: fontScale) { _, v in KairosTheme.Typography.scale = CGFloat(v) }
+        // When settings sets hasCompletedOnboarding = false, clear forceShowApp
+        // so the onboarding actually appears again in the same session.
+        .onChange(of: hasCompletedOnboarding) { _, newValue in
+            if !newValue { forceShowApp = false }
+        }
     }
 }
 
@@ -102,9 +114,13 @@ struct AppRootView: View {
 
     var body: some View {
         splitView
+            // Apply to the split view itself so BOTH columns inherit the scheme.
+            // The container-level modifier alone doesn't always propagate through
+            // NavigationSplitView's separate column rendering on macOS.
+            .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 
-    // MARK: Sidebar split (iPad / Mac)
+    // MARK: Sidebar split
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             KairosSidebar(selection: $selection)

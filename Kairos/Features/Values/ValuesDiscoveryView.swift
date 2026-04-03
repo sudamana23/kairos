@@ -99,15 +99,25 @@ struct ValuesDiscoveryView: View {
                 .frame(minHeight: 120, maxHeight: 200)
 
             HStack {
+                // Allow skipping to manual entry at any point
+                Button("Enter manually") {
+                    suggestions = [
+                        ValueSuggestion(name: "", reflection: "", emoji: "", colorHex: "#4A9A6A"),
+                        ValueSuggestion(name: "", reflection: "", emoji: "", colorHex: "#5A7AB5"),
+                        ValueSuggestion(name: "", reflection: "", emoji: "", colorHex: "#A0522D"),
+                    ]
+                    step = .review
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(KairosTheme.Colors.textMuted)
+                .font(KairosTheme.Typography.caption)
+
                 Spacer()
                 Button(number == total ? "Find my values →" : "Next →") {
                     onNext()
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(binding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ? KairosTheme.Colors.textMuted
-                    : KairosTheme.Colors.accent)
-                .disabled(binding.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .foregroundStyle(KairosTheme.Colors.accent)
             }
         }
         .padding(KairosTheme.Spacing.xl)
@@ -162,16 +172,18 @@ struct ValuesDiscoveryView: View {
                                 .labelsHidden()
                                 .toggleStyle(.checkbox)
 
-                            TextField("Emoji", text: $s.emoji)
-                                .font(.title2)
-                                .frame(width: 36)
-                                .multilineTextAlignment(.center)
+                            // Colour swatch (pick from fixed palette)
+                            let swatchColors = ["#4A9A6A","#5A7AB5","#A0522D","#8B6B8B","#B8860B","#2E86AB","#C0392B","#7D3C98","#1A6B4A","#D4AC0D"]
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color(hex: s.colorHex.isEmpty ? "#4A9A6A" : s.colorHex))
+                                .frame(width: 6)
+                                .frame(minHeight: 44)
 
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 TextField("Value name", text: $s.name)
                                     .font(KairosTheme.Typography.monoLarge)
                                     .foregroundStyle(KairosTheme.Colors.textPrimary)
-                                TextField("Reflection", text: $s.reflection)
+                                TextField("Why this matters to you", text: $s.reflection)
                                     .font(KairosTheme.Typography.monoSmall)
                                     .foregroundStyle(KairosTheme.Colors.textMuted)
                             }
@@ -236,21 +248,20 @@ struct ValuesDiscoveryView: View {
         Based on these three personal reflections, suggest exactly 3 to 5 core life values.
 
         Reflection 1 — What they want their life to stand for:
-        \(answer1)
+        \(answer1.isEmpty ? "(not answered)" : answer1)
 
         Reflection 2 — What they'd regret not making time for:
-        \(answer2)
+        \(answer2.isEmpty ? "(not answered)" : answer2)
 
         Reflection 3 — A person they admire and the quality they want to embody:
-        \(answer3)
+        \(answer3.isEmpty ? "(not answered)" : answer3)
 
         Rules:
         - Suggest 3–5 values only. Fewer is better than more.
         - Each value name: 1–2 words, evocative, not generic (avoid "Balance", "Success", "Health" as standalone names)
-        - Each reflection: one honest sentence about why this value matters to THIS person, based on their answers
-        - Each emoji: a single emoji that captures the essence
-        - Format each value on its own line as: EMOJI | Name | Reflection sentence
-        - Output only the values list, nothing else
+        - Each reflection: one honest sentence about why this value matters to THIS person based on their answers
+        - Format each value on its own line as: Name | Reflection sentence
+        - Output only the values list, nothing else, no numbering, no emoji
         """
 
         #if canImport(FoundationModels)
@@ -284,20 +295,19 @@ struct ValuesDiscoveryView: View {
         let colors = ["#4A9A6A", "#5A7AB5", "#A0522D", "#8B6B8B", "#B8860B"]
         return lines.enumerated().compactMap { (i, line) in
             let parts = line.components(separatedBy: " | ")
-            guard parts.count >= 3 else { return nil }
-            let emoji = parts[0].trimmingCharacters(in: .whitespaces)
-            let name = parts[1].trimmingCharacters(in: .whitespaces)
-            let reflection = parts[2].trimmingCharacters(in: .whitespaces)
+            guard parts.count >= 2 else { return nil }
+            let name = parts[0].trimmingCharacters(in: .whitespaces)
+            let reflection = parts[1].trimmingCharacters(in: .whitespaces)
             guard !name.isEmpty else { return nil }
-            return ValueSuggestion(name: name, reflection: reflection, emoji: emoji, colorHex: colors[i % colors.count])
+            return ValueSuggestion(name: name, reflection: reflection, emoji: "", colorHex: colors[i % colors.count])
         }
     }
 
     private func stubSuggestions() -> [ValueSuggestion] {
         [
-            ValueSuggestion(name: "Presence", reflection: "Being fully here — with people, with work, with yourself.", emoji: "🌿", colorHex: "#4A9A6A"),
-            ValueSuggestion(name: "Growth", reflection: "Staying curious and becoming more capable over time.", emoji: "🌱", colorHex: "#5A7AB5"),
-            ValueSuggestion(name: "Integrity", reflection: "Acting in line with what you believe, even when no one is watching.", emoji: "🧭", colorHex: "#8B6B8B")
+            ValueSuggestion(name: "Presence", reflection: "Being fully here — with people, with work, with yourself.", emoji: "", colorHex: "#4A9A6A"),
+            ValueSuggestion(name: "Growth", reflection: "Staying curious and becoming more capable over time.", emoji: "", colorHex: "#5A7AB5"),
+            ValueSuggestion(name: "Integrity", reflection: "Acting in line with what you believe, even when no one is watching.", emoji: "", colorHex: "#8B6B8B")
         ]
     }
 

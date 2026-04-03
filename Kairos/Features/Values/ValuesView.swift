@@ -112,15 +112,9 @@ private struct ValueRow: View {
                 .frame(minHeight: 56)
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: KairosTheme.Spacing.sm) {
-                    if !value.emoji.isEmpty {
-                        Text(value.emoji)
-                            .font(.title2)
-                    }
-                    Text(value.name.isEmpty ? "Unnamed" : value.name)
-                        .font(KairosTheme.Typography.monoLarge)
-                        .foregroundStyle(KairosTheme.Colors.textPrimary)
-                }
+                Text(value.name.isEmpty ? "Unnamed" : value.name)
+                    .font(KairosTheme.Typography.monoLarge)
+                    .foregroundStyle(KairosTheme.Colors.textPrimary)
                 if !value.reflection.isEmpty {
                     Text(value.reflection)
                         .font(KairosTheme.Typography.body)

@@ -50,17 +50,23 @@ enum KairosTheme {
     }
 
     // MARK: - Typography
+    // scale is updated from @AppStorage("fontScale") in RootContainerView.
+    // All font properties are computed so every re-render picks up the latest scale.
 
     enum Typography {
-        static let displayLarge  = Font.system(size: 34, weight: .bold,     design: .default)
-        static let displayMedium = Font.system(size: 24, weight: .semibold, design: .default)
-        static let headline      = Font.system(size: 16, weight: .semibold, design: .default)
-        static let body          = Font.system(size: 14, weight: .regular,  design: .default)
-        static let caption       = Font.system(size: 12, weight: .regular,  design: .default)
-        static let monoLarge     = Font.system(size: 24, weight: .medium,   design: .monospaced)
-        static let mono          = Font.system(size: 14, weight: .regular,  design: .monospaced)
-        static let monoSmall     = Font.system(size: 11, weight: .regular,  design: .monospaced)
-        static let label         = Font.system(size: 11, weight: .medium,   design: .default)
+        static var scale: CGFloat = 1.0
+
+        private static func sz(_ base: CGFloat) -> CGFloat { base * scale }
+
+        static var displayLarge:  Font { .system(size: sz(34), weight: .bold,     design: .default) }
+        static var displayMedium: Font { .system(size: sz(24), weight: .semibold, design: .default) }
+        static var headline:      Font { .system(size: sz(16), weight: .semibold, design: .default) }
+        static var body:          Font { .system(size: sz(14), weight: .regular,  design: .default) }
+        static var caption:       Font { .system(size: sz(12), weight: .regular,  design: .default) }
+        static var monoLarge:     Font { .system(size: sz(24), weight: .medium,   design: .monospaced) }
+        static var mono:          Font { .system(size: sz(14), weight: .regular,  design: .monospaced) }
+        static var monoSmall:     Font { .system(size: sz(11), weight: .regular,  design: .monospaced) }
+        static var label:         Font { .system(size: sz(11), weight: .medium,   design: .default) }
     }
 
     // MARK: - Spacing
