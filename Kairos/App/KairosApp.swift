@@ -293,7 +293,7 @@ struct KairosSidebar: View {
             // MARK: Header
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("AXIA")
+                    Text("TENETS")
                         .font(KairosTheme.Typography.monoLarge)
                         .foregroundStyle(KairosTheme.Colors.textPrimary)
                         .tracking(3)
