@@ -39,7 +39,7 @@ struct OnboardingView: View {
     private var welcomeStep: some View {
         centeredContent {
             VStack(spacing: KairosTheme.Spacing.xs) {
-                Text("FOURONEIGHT")
+                Text("AXIA")
                     .font(KairosTheme.Typography.monoLarge)
                     .foregroundStyle(KairosTheme.Colors.textPrimary)
                     .tracking(6)
@@ -145,7 +145,7 @@ struct OnboardingView: View {
         centeredContent {
             stepHeader(
                 title: "On-device AI",
-                subtitle: "FourOneEight uses Apple Intelligence to generate insights, challenge your thinking during reviews, and summarise your year."
+                subtitle: "Axia uses Apple Intelligence to generate insights, challenge your thinking during reviews, and summarise your year."
             )
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
                 infoRow(

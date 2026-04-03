@@ -13,7 +13,7 @@ struct SmallWidgetView: View {
         VStack(alignment: .leading, spacing: 0) {
 
             // App name
-            Text("FOURONEIGHT")
+            Text("AXIA")
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .tracking(1)
@@ -83,7 +83,7 @@ struct MediumWidgetView: View {
             // ── Left column ──
             VStack(alignment: .leading, spacing: 6) {
 
-                Text("FOURONEIGHT")
+                Text("AXIA")
                     .font(.system(size: 8, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .tracking(1)
@@ -134,7 +134,7 @@ struct MediumWidgetView: View {
                     DomainProgressRow(domain: domain)
                 }
                 if domains.isEmpty {
-                    Text("Open FourOneEight\nto sync data.")
+                    Text("Open Axia\nto sync data.")
                         .font(.system(size: 9))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)

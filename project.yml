@@ -4,7 +4,7 @@ options:
   createIntermediateGroups: true
 
 schemes:
-  FourOneEight:
+  Axia:
     build:
       targets:
         Kairos: all
@@ -34,7 +34,7 @@ targets:
       - sdk: UserNotifications.framework
     settings:
       base:
-        PRODUCT_NAME: FourOneEight
+        PRODUCT_NAME: Axia
         PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos
         SWIFT_VERSION: "5.9"
         MACOSX_DEPLOYMENT_TARGET: "15.1"
@@ -52,16 +52,16 @@ targets:
     info:
       path: Kairos/Resources/Info.plist
       properties:
-        CFBundleName: FourOneEight
-        CFBundleDisplayName: FourOneEight
+        CFBundleName: Axia
+        CFBundleDisplayName: Axia
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "18"
+        CFBundleVersion: "19"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
-        NSMicrophoneUsageDescription: "FourOneEight uses the microphone for voice pulse check-ins and monthly review recordings."
-        NSSpeechRecognitionUsageDescription: "FourOneEight transcribes your voice notes on-device for weekly pulse check-ins."
+        NSMicrophoneUsageDescription: "Axia uses the microphone for voice pulse check-ins and monthly review recordings."
+        NSSpeechRecognitionUsageDescription: "Axia transcribes your voice notes on-device for weekly pulse check-ins."
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - kairos

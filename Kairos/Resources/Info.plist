@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>FourOneEight</string>
+	<string>Axia</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>FourOneEight</string>
+	<string>Axia</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -32,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>18</string>
+	<string>19</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -42,9 +42,9 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>FourOneEight uses the microphone for voice pulse check-ins and monthly review recordings.</string>
+	<string>Axia uses the microphone for voice pulse check-ins and monthly review recordings.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>FourOneEight transcribes your voice notes on-device for weekly pulse check-ins.</string>
+	<string>Axia transcribes your voice notes on-device for weekly pulse check-ins.</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
