@@ -8,7 +8,6 @@ schemes:
     build:
       targets:
         Kairos: all
-        KairosWidget: [build, archive]
     run:
       config: Debug
     test:
@@ -23,41 +22,28 @@ schemes:
 targets:
   Kairos:
     type: application
-    supportedDestinations:
-      - macOS
-      - iOS
+    platform: macOS
     deploymentTargets:
-      macOS: "14.0"
-      iOS: "17.0"
+      macOS: "15.1"
     sources:
       - path: Kairos
     dependencies:
       - sdk: CloudKit.framework
-      - sdk: HealthKit.framework
-        platforms: [iOS]
       - sdk: Security.framework
       - sdk: Speech.framework
       - sdk: UserNotifications.framework
-      - sdk: WidgetKit.framework
-        platforms: [iOS]
-      - target: KairosWidget
-        platforms: [iOS]
     settings:
       base:
         PRODUCT_NAME: FourOneEight
         PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos
         SWIFT_VERSION: "5.9"
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
-        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        TARGETED_DEVICE_FAMILY: "1,2"
+        MACOSX_DEPLOYMENT_TARGET: "15.1"
         ENABLE_HARDENED_RUNTIME: YES
         "ENABLE_APP_SANDBOX[sdk=macosx*]": YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "Apple Development"
         DEVELOPMENT_TEAM: 5Y9SADJQM9
         CODE_SIGN_ENTITLEMENTS: Kairos/Resources/Kairos.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Kairos/Resources/Kairos-iOS.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Kairos/Resources/Kairos-iOS.entitlements
         CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         ARCHS: "$(ARCHS_STANDARD)"
         ONLY_ACTIVE_ARCH: NO
@@ -73,20 +59,9 @@ targets:
         CFBundleVersion: "17"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
-        UIBackgroundModes:
-          - remote-notification
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
-        NSHealthShareUsageDescription: "FourOneEight reads your health data to surface physiological context during life reviews."
-        NSHealthUpdateUsageDescription: "FourOneEight does not write health data."
         NSMicrophoneUsageDescription: "FourOneEight uses the microphone for voice pulse check-ins and monthly review recordings."
         NSSpeechRecognitionUsageDescription: "FourOneEight transcribes your voice notes on-device for weekly pulse check-ins."
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        UILaunchScreen:
-          UIColorName: ""
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - kairos
@@ -101,32 +76,3 @@ targets:
             UTTypeDescription: Kairos Key Result
             UTTypeConformsTo:
               - public.data
-
-  KairosWidget:
-    type: app-extension
-    platform: iOS
-    deploymentTargets:
-      iOS: "17.0"
-    sources:
-      - path: KairosWidget
-    settings:
-      base:
-        PRODUCT_NAME: KairosWidget
-        PRODUCT_BUNDLE_IDENTIFIER: com.damianspendel.kairos.widget
-        SWIFT_VERSION: "5.9"
-        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_IDENTITY: "Apple Development"
-        DEVELOPMENT_TEAM: 5Y9SADJQM9
-        CODE_SIGN_ENTITLEMENTS: KairosWidget/KairosWidget.entitlements
-        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
-        SKIP_INSTALL: YES
-        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../../Frameworks @executable_path/../../../Frameworks"
-    info:
-      path: KairosWidget/Info.plist
-      properties:
-        CFBundleDisplayName: FourOneEight Widget
-        CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "17"
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.widgetkit-extension

@@ -170,11 +170,7 @@ struct KairosApp: App {
                     let granted = await NotificationManager.shared.requestPermission()
                     if granted { await NotificationManager.shared.scheduleAll() }
                 }
-                .onOpenURL { url in
-                    Task { await OuraManager.shared.handleCallback(url: url) }
-                }
         }
-        #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
         .defaultSize(width: 1280, height: 820)
@@ -182,7 +178,6 @@ struct KairosApp: App {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
         }
-        #endif
     }
 }
 
@@ -192,7 +187,6 @@ struct RootContainerView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("isDarkMode") private var isDarkMode = true
     @Query private var years: [KairosYear]
-    @Query private var pulses: [KairosWeeklyPulse]
     // Session-only flag: set to true the moment the user taps "Continue to the app"
     // so that years.isEmpty can't loop the onboarding back within the same launch.
     @State private var forceShowApp = false
@@ -208,9 +202,7 @@ struct RootContainerView: View {
                     hasCompletedOnboarding = true
                     forceShowApp = true
                 }
-                #if os(macOS)
                 .frame(minWidth: 600, minHeight: 500)
-                #endif
             } else {
                 AppRootView()
             }
@@ -218,11 +210,6 @@ struct RootContainerView: View {
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .onAppear { KairosTheme.Colors.isDark = isDarkMode }
         .onChange(of: isDarkMode) { _, v in KairosTheme.Colors.isDark = v }
-        #if os(iOS)
-        .onAppear { KairosWidgetBridge.write(years: years, pulses: pulses) }
-        .onChange(of: years.count)  { _, _ in KairosWidgetBridge.write(years: years, pulses: pulses) }
-        .onChange(of: pulses.count) { _, _ in KairosWidgetBridge.write(years: years, pulses: pulses) }
-        #endif
     }
 }
 
@@ -232,20 +219,9 @@ struct AppRootView: View {
     @State private var selection: KairosRoute? = .dashboard
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @AppStorage("isDarkMode") private var isDarkMode = true
-    #if os(iOS)
-    @Environment(\.horizontalSizeClass) private var hSizeClass
-    #endif
 
     var body: some View {
-        #if os(iOS)
-        if hSizeClass == .compact {
-            iPhoneTabView
-        } else {
-            splitView
-        }
-        #else
         splitView
-        #endif
     }
 
     // MARK: Sidebar split (iPad / Mac)
@@ -274,42 +250,6 @@ struct AppRootView: View {
         }
     }
 
-    // MARK: Tab bar (iPhone)
-    #if os(iOS)
-    private var iPhoneTabView: some View {
-        TabView {
-            // Pulse — primary use case, opens first
-            NavigationStack {
-                PulseView()
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            SyncStatusBadge()
-                        }
-                    }
-            }
-            .tabItem { Label("Pulse", systemImage: "waveform") }
-
-            // Overview — domains, objectives, key results
-            NavigationStack {
-                PhoneOverviewView()
-            }
-            .tabItem { Label("Overview", systemImage: "square.grid.2x2") }
-
-            // Health — HealthKit capture, syncs to Mac via CloudKit
-            PhoneHealthTabView()
-                .tabItem { Label("Health", systemImage: "heart.fill") }
-
-            // Settings
-            NavigationStack {
-                SettingsView()
-                    .navigationTitle("Settings")
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-            .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
-        }
-        .tint(KairosTheme.Colors.accent)
-    }
-    #endif
 }
 
 // MARK: - KairosRoute

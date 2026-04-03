@@ -4,14 +4,13 @@ import SwiftData
 // MARK: - OnboardingView
 
 struct OnboardingView: View {
-    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
     var onComplete: () -> Void
 
     @State private var step = 0
     @State private var showYearWizard = false
     @State private var yearSetupDone = false
 
-    private let totalSteps = 6
+    private let totalSteps = 5
 
     var body: some View {
         ZStack {
@@ -24,7 +23,6 @@ struct OnboardingView: View {
                 case 3: rhythmStep
                 case 4: intelligenceStep
                 case 5: yearStep
-                case 6: healthStep
                 default: EmptyView()
                 }
             }
@@ -197,51 +195,12 @@ struct OnboardingView: View {
             .frame(maxWidth: 460)
             .padding(.top, KairosTheme.Spacing.xl)
 
-            #if os(iOS)
-            primaryButton("Continue") { step = 6 }
-                .padding(.top, KairosTheme.Spacing.xl)
-            #else
             primaryButton("Continue to the app") { onComplete() }
                 .padding(.top, KairosTheme.Spacing.xl)
-            #endif
         }
     }
 
     // MARK: - Step 6: Health (iOS only)
-
-    private var healthStep: some View {
-        centeredContent {
-            stepHeader(
-                title: "Health data",
-                subtitle: "Connect Apple Health to surface physiological context during your reviews."
-            )
-            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
-                infoRow(
-                    title: "What it reads",
-                    body: "HRV, resting heart rate, sleep, steps, active energy, and VO2 max from the Health app."
-                )
-                KairosDivider()
-                infoRow(
-                    title: "Synced to all devices",
-                    body: "Health data captured here is stored in iCloud and appears on your Mac and other devices automatically."
-                )
-                KairosDivider()
-                integrationToggle(
-                    title: "Apple Health",
-                    subtitle: "Show health panel on dashboard",
-                    isOn: $healthKitEnabled
-                )
-            }
-            .padding(KairosTheme.Spacing.md)
-            .background(KairosTheme.Colors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: KairosTheme.Radius.md).stroke(KairosTheme.Colors.border, lineWidth: 1))
-            .frame(maxWidth: 500)
-            .padding(.top, KairosTheme.Spacing.xl)
-            primaryButton("Start using FourOneEight") { onComplete() }
-                .padding(.top, KairosTheme.Spacing.xl)
-        }
-    }
 
     // MARK: - Shared components
 
@@ -310,23 +269,6 @@ struct OnboardingView: View {
                 .font(KairosTheme.Typography.caption)
                 .foregroundStyle(KairosTheme.Colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func integrationToggle(title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: KairosTheme.Spacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(KairosTheme.Typography.headline)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                Text(subtitle)
-                    .font(KairosTheme.Typography.caption)
-                    .foregroundStyle(KairosTheme.Colors.textSecondary)
-            }
-            Spacer()
-            Toggle("", isOn: isOn)
-                .toggleStyle(.switch)
-                .labelsHidden()
         }
     }
 

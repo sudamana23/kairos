@@ -8,7 +8,6 @@ struct SettingsView: View {
     private var years:         [KairosYear] { allYears.filter { !$0.isArchived } }
     private var archivedYears: [KairosYear] { allYears.filter {  $0.isArchived } }
 
-    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
 
     @State private var showYearWizard = false
@@ -40,7 +39,6 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xl) {
                 header
                 yearSetupSection
-                integrationsSection
                 yearsSection
                 archiveSection
                 notificationsSection
@@ -275,41 +273,6 @@ struct SettingsView: View {
                 }
             }
             .buttonStyle(.plain)
-            .padding(KairosTheme.Spacing.md)
-            .background(KairosTheme.Colors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))
-            .overlay(
-                RoundedRectangle(cornerRadius: KairosTheme.Radius.md)
-                    .stroke(KairosTheme.Colors.border, lineWidth: 1)
-            )
-        }
-    }
-
-    // MARK: - Integrations Section
-
-    private var integrationsSection: some View {
-        VStack(alignment: .leading, spacing: KairosTheme.Spacing.sm) {
-            KairosLabel(text: "Health")
-
-            VStack(alignment: .leading, spacing: KairosTheme.Spacing.md) {
-                Toggle(isOn: $healthKitEnabled) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Health panel")
-                            .font(KairosTheme.Typography.body)
-                            .foregroundStyle(KairosTheme.Colors.textPrimary)
-                        #if os(macOS)
-                        Text("Show physiological data synced from your iPhone or iPad")
-                            .font(KairosTheme.Typography.caption)
-                            .foregroundStyle(KairosTheme.Colors.textMuted)
-                        #else
-                        Text("Show Apple Health data on dashboard")
-                            .font(KairosTheme.Typography.caption)
-                            .foregroundStyle(KairosTheme.Colors.textMuted)
-                        #endif
-                    }
-                }
-                .toggleStyle(.switch)
-            }
             .padding(KairosTheme.Spacing.md)
             .background(KairosTheme.Colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.md))

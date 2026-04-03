@@ -3,7 +3,6 @@ import Foundation
 // MARK: - KairosWidgetData
 //
 // Lightweight Codable snapshot read by the widget from the shared App Group.
-// Must stay in sync with the copy in Kairos/Core/Sync/KairosWidgetBridge.swift.
 
 struct KairosWidgetData: Codable {
     var yearProgress:    Double

@@ -15,10 +15,6 @@ final class KairosYear {
     /// The year+month (e.g. 202603) when aiSummary was last generated.
     var aiSummaryGeneratedMonth: Int = 0
 
-    /// JSON-encoded HealthSnapshot synced from the most recent iOS device.
-    var latestHealthSnapshotData: String = ""
-    var latestHealthSnapshotCapturedAt: Date = Date.distantPast
-
     // CloudKit requires to-many relationships to be optional ([T]?).
     // The computed `domains` wrapper keeps the public API non-optional.
     @Relationship(deleteRule: .nullify, inverse: \KairosDomain.year)
@@ -54,25 +50,6 @@ final class KairosYear {
         let krs = allKeyResults
         guard !krs.isEmpty else { return 0 }
         return krs.reduce(0.0) { $0 + $1.currentStatus.weight } / Double(krs.count)
-    }
-
-    /// Decoded health snapshot captured on an iOS device and synced via CloudKit.
-    var storedHealthSnapshot: HealthSnapshot? {
-        get {
-            guard !latestHealthSnapshotData.isEmpty,
-                  let data = latestHealthSnapshotData.data(using: .utf8),
-                  let snap = try? JSONDecoder().decode(HealthSnapshot.self, from: data)
-            else { return nil }
-            return snap
-        }
-        set {
-            guard let snap = newValue,
-                  let data = try? JSONEncoder().encode(snap),
-                  let str = String(data: data, encoding: .utf8)
-            else { latestHealthSnapshotData = ""; return }
-            latestHealthSnapshotData = str
-            latestHealthSnapshotCapturedAt = Date()
-        }
     }
 }
 

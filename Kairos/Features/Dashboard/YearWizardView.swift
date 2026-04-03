@@ -726,7 +726,7 @@ struct YearWizardView: View {
         if let prev = previousYear {
             return IntelligenceManager.shared.buildContext(from: prev, pulses: Array(pulses.prefix(8)))
         }
-        return IntelligenceContext(year: targetYear, month: nil, domainSummaries: [], recentPulseNotes: [], healthSnapshot: nil, persona: nil)
+        return IntelligenceContext(year: targetYear, month: nil, domainSummaries: [], recentPulseNotes: [], persona: nil)
     }
 
     private func setDefaultDomains() {

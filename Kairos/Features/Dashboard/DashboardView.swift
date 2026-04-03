@@ -39,12 +39,7 @@ struct DashboardView: View {
     @Query private var allKeyResults: [KairosKeyResult]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 
-    @AppStorage("healthKitEnabled") private var healthKitEnabled = true
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    #if os(iOS)
-    @ObservedObject private var hk = HealthKitManager.shared
-    #endif
 
     @State private var selectedYear = 2026
     @State private var showingWizard = false
@@ -61,20 +56,12 @@ struct DashboardView: View {
         return Array(repeating: GridItem(.flexible(), spacing: KairosTheme.Spacing.md), count: count)
     }
 
-    private var showHealthPanel: Bool { healthKitEnabled }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.xl) {
                 header
                 if let year = currentYear {
                     overallProgress(for: year)
-                    if showHealthPanel {
-                        HealthPanel(
-                            storedSnapshot: year.storedHealthSnapshot,
-                            storedSnapshotDate: year.latestHealthSnapshotCapturedAt
-                        )
-                    }
                     domainGrid(for: year)
                 } else {
                     emptyState
@@ -88,13 +75,6 @@ struct DashboardView: View {
             guard let year = currentYear else { return }
             await generateYearSummary(for: year)
         }
-        #if os(iOS)
-        .onChange(of: hk.snapshot) { _, newSnap in
-            guard let snap = newSnap, let year = currentYear else { return }
-            year.storedHealthSnapshot = snap
-            try? modelContext.save()
-        }
-        #endif
     }
 
     // MARK: - AI Summary

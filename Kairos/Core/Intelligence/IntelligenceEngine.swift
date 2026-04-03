@@ -24,20 +24,12 @@ struct IntelligenceContext: Sendable {
     let month: Int?
     let domainSummaries: [DomainSummary]
     let recentPulseNotes: [String]
-    let healthSnapshot: HealthSnapshot?
     let persona: AIPersona?
 
     struct DomainSummary: Sendable {
         let name: String
         let progress: Double
         let recentCommentary: [String]
-    }
-
-    struct HealthSnapshot: Sendable {
-        let avgHRV: Double?
-        let avgSleepHours: Double?
-        let avgRHR: Double?
-        let vo2Max: Double?
     }
 }
 
@@ -174,15 +166,6 @@ final class FoundationModelsEngine: IntelligenceEngine, @unchecked Sendable {
             dataLines.append(s)
         }
 
-        if let h = ctx.healthSnapshot {
-            var hp: [String] = []
-            if let hrv = h.avgHRV     { hp.append("HRV \(Int(hrv))ms") }
-            if let sl  = h.avgSleepHours { hp.append("sleep \(String(format: "%.1f", sl))h/night") }
-            if let rhr = h.avgRHR     { hp.append("RHR \(Int(rhr))bpm") }
-            if let vo2 = h.vo2Max     { hp.append("VO2max \(Int(vo2))") }
-            if !hp.isEmpty { dataLines.append("Body: " + hp.joined(separator: ", ")) }
-        }
-
         if !ctx.recentPulseNotes.isEmpty {
             let snippet = ctx.recentPulseNotes.prefix(3).joined(separator: " | ")
             dataLines.append("Recent reflections: \(snippet)")
@@ -285,22 +268,11 @@ final class IntelligenceManager: ObservableObject {
             .filter { !$0.isEmpty }
             .map { String($0) }
 
-        let hkSnap = HealthKitManager.shared.snapshot
-        let healthSnapshot: IntelligenceContext.HealthSnapshot? = hkSnap.map {
-            IntelligenceContext.HealthSnapshot(
-                avgHRV: $0.avgHRV,
-                avgSleepHours: $0.avgSleepHours,
-                avgRHR: $0.avgRHR,
-                vo2Max: $0.vo2Max
-            )
-        }
-
         return IntelligenceContext(
             year: year.year,
             month: month,
             domainSummaries: domainSummaries,
             recentPulseNotes: recentNotes,
-            healthSnapshot: healthSnapshot,
             persona: persona
         )
     }
