@@ -1,30 +1,11 @@
 import SwiftUI
 import SwiftData
-import CloudKit
 
 @main
 struct KairosApp: App {
     let modelContainer: ModelContainer
 
     init() {
-        // Initialise the sync monitor before the container so its observer
-        // is registered before CloudKit starts firing events.
-        _ = CloudKitSyncMonitor.shared
-
-        // If a zone deletion was scheduled by scheduleImportAndRestart, complete it
-        // NOW — before creating the ModelContainer — so CloudKit starts with a
-        // clean slate. We block init briefly (max 10 s) using a DispatchGroup.
-        if UserDefaults.standard.bool(forKey: "pendingZoneDeletion") {
-            UserDefaults.standard.set(false, forKey: "pendingZoneDeletion")
-            let group = DispatchGroup()
-            group.enter()
-            Task.detached {
-                await Self.deleteCloudKitZone()
-                group.leave()
-            }
-            _ = group.wait(timeout: .now() + 10)
-        }
-
         let schema = Schema([
             KairosYear.self,
             KairosDomain.self,
@@ -38,12 +19,8 @@ struct KairosApp: App {
         modelContainer = Self.makeContainer(schema: schema)
     }
 
-    // MARK: - Container bootstrap (CloudKit → local → reset+local)
+    // MARK: - Local store (no CloudKit — import/export via iCloud Drive is the backup mechanism)
 
-    // CloudKit-backed store. IMPORTANT: this file must ONLY ever be opened with
-    // cloudKitDatabase: .private(…). Opening it in local-only mode corrupts
-    // CloudKit's internal metadata tables (history tokens, zone state), causing
-    // CKInternalErrorDomain Code=1011 on every subsequent launch.
     private static var storeURL: URL = {
         let fm = FileManager.default
         let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -52,129 +29,17 @@ struct KairosApp: App {
         return dir.appending(path: "kairos.store", directoryHint: .notDirectory)
     }()
 
-    // Separate file for the local-only fallback. Must be a different path from storeURL
-    // so the CloudKit store's metadata is never written by a non-CloudKit container.
-    private static var localStoreURL: URL = {
-        let fm = FileManager.default
-        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appending(path: "com.damianspendel.kairos", directoryHint: .isDirectory)
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appending(path: "kairos-local.store", directoryHint: .notDirectory)
-    }()
-
-    // JSON written here before a restart-for-import; consumed once on the next launch.
-    static var pendingImportURL: URL = {
-        let fm = FileManager.default
-        let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = support.appending(path: "com.damianspendel.kairos", directoryHint: .isDirectory)
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appending(path: "pending-import.json", directoryHint: .notDirectory)
-    }()
-
-    // MARK: - Import + restart
-
-    /// Save `data` for the next launch, wipe the local CloudKit store AND delete
-    /// the server-side zone, then terminate the process.
-    ///
-    /// Deleting the zone server-side:
-    /// - Forces ALL devices to invalidate their local CloudKit caches
-    /// - Allows the Mac (even if its CloudKit init was stuck in Code=1011) to
-    ///   reset and pull down the fresh data after relaunch
-    /// - Removes any zombie/stale records from previous failed sync attempts
-    ///
-    /// On relaunch: fresh local store → CloudKit creates a new zone → pending
-    /// import is applied → CloudKit pushes everything via initial-export, which
-    /// handles large batches cleanly. Other devices get a zone-change
-    /// notification and download from scratch.
-    /// Save `data` for next launch, flag zone deletion, wipe local store, exit.
-    /// Zone deletion happens at the TOP of the next init() — before the container
-    /// is created — so CloudKit starts completely fresh with no stale state.
-    static func scheduleImportAndRestart(data: Data) {
-        try? data.write(to: pendingImportURL)
-        UserDefaults.standard.set(true, forKey: "pendingZoneDeletion")
-        deleteStore()
-        exit(0)
-    }
-
-    private static func deleteCloudKitZone() async {
-        let container = CKContainer(identifier: "iCloud.com.damianspendel.kairos")
-        let zoneID = CKRecordZone.ID(
-            zoneName: "com.apple.coredata.cloudkit.zone",
-            ownerName: CKCurrentUserDefaultName
-        )
-        do {
-            try await container.privateCloudDatabase.deleteRecordZone(withID: zoneID)
-            print("[Kairos] ✓ Deleted CloudKit zone — will be recreated fresh on relaunch")
-        } catch {
-            // Zone may not exist yet (e.g. CloudKit never successfully initialised)
-            print("[Kairos] CloudKit zone delete skipped: \(error.localizedDescription)")
-        }
-    }
-
-    /// Wipe the local CloudKit store and restart. Use on a device where CloudKit
-    /// is stuck (red badge) after another device has already imported and uploaded.
-    /// The device will re-download everything from iCloud on the next launch.
-    static func resetSyncAndRestart() {
-        deleteStore()
-        exit(0)
-    }
-
-    // MARK: - Pending import (applied once on first launch after scheduleImportAndRestart)
-
-    static func applyPendingImportIfNeeded(context: ModelContext) {
-        let url = pendingImportURL
-        guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url) else { return }
-        defer { try? FileManager.default.removeItem(at: url) }
-        do {
-            let result = try KairosExportManager.importBackup(from: data, into: context)
-            print("[Kairos] ✓ Applied pending import: \(result.summary)")
-        } catch {
-            print("[Kairos] ✗ Pending import failed: \(error)")
-        }
-    }
-
     private static func makeContainer(schema: Schema) -> ModelContainer {
-        let cloudConfig = ModelConfiguration(
-            url: storeURL,
-            cloudKitDatabase: .private("iCloud.com.damianspendel.kairos")
-        )
-        // Uses localStoreURL — a DIFFERENT file — so the CloudKit store is never
-        // opened in non-CloudKit mode, preserving its internal metadata.
-        let localConfig = ModelConfiguration(url: localStoreURL, cloudKitDatabase: .none)
-
-        // 1. Try CloudKit sync
-        do {
-            let c = try ModelContainer(for: schema, configurations: cloudConfig)
-            print("[Kairos] ✓ ModelContainer with CloudKit sync — \(storeURL.path)")
-            return c
-        } catch {
-            print("[Kairos] CloudKit init failed: \(error)")
-        }
-
-        // 2. Local fallback (iCloud signed out, network issue, etc.)
-        if let c = try? ModelContainer(for: schema, configurations: localConfig) {
-            print("[Kairos] ModelContainer local-only — \(storeURL.path)")
+        let config = ModelConfiguration(url: storeURL, cloudKitDatabase: .none)
+        if let c = try? ModelContainer(for: schema, configurations: config) {
             return c
         }
-
-        // 3. Store unreadable — wipe and start fresh (seed data will be recreated)
-        print("[Kairos] Store unreadable — resetting")
-        Self.deleteStore()
-        if let c = try? ModelContainer(for: schema, configurations: localConfig) {
-            print("[Kairos] ✓ Fresh ModelContainer after reset")
-            return c
-        }
-
-        fatalError("[Kairos] Cannot create ModelContainer even after store reset")
-    }
-
-    private static func deleteStore() {
+        // Store unreadable — reset and try again
         let fm = FileManager.default
         for ext in ["", "-wal", "-shm"] {
-            let url = URL(fileURLWithPath: storeURL.path + ext)
-            try? fm.removeItem(at: url)
+            try? fm.removeItem(at: URL(fileURLWithPath: storeURL.path + ext))
         }
+        return try! ModelContainer(for: schema, configurations: config)
     }
 
     var body: some Scene {
@@ -182,16 +47,6 @@ struct KairosApp: App {
             RootContainerView()
                 .modelContainer(modelContainer)
                 .task {
-                    // If a pending import exists, wait for CloudKit to finish its
-                    // initial zone setup (first .synced event) before inserting data.
-                    // This prevents the import overwhelming CloudKit mid-initialisation.
-                    if FileManager.default.fileExists(atPath: Self.pendingImportURL.path) {
-                        for _ in 0..<20 {
-                            if CloudKitSyncMonitor.shared.state == .synced { break }
-                            try? await Task.sleep(for: .seconds(1))
-                        }
-                    }
-                    Self.applyPendingImportIfNeeded(context: modelContainer.mainContext)
                     let granted = await NotificationManager.shared.requestPermission()
                     if granted { await NotificationManager.shared.scheduleAll() }
                 }
@@ -333,7 +188,6 @@ struct KairosSidebar: View {
                     }
                 }
                 Spacer()
-                SyncStatusBadge()
                 Button {
                     isDarkMode.toggle()
                     KairosTheme.Colors.isDark = isDarkMode

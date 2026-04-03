@@ -66,18 +66,23 @@ struct OnboardingView: View {
 
     private var welcomeStep: some View {
         centeredContent {
-            VStack(spacing: KairosTheme.Spacing.xs) {
-                Text("TENETS")
-                    .font(KairosTheme.Typography.monoLarge)
-                    .foregroundStyle(KairosTheme.Colors.textPrimary)
-                    .tracking(6)
-                Text("A framework for deliberate annual living.")
-                    .font(KairosTheme.Typography.body)
+            VStack(spacing: KairosTheme.Spacing.lg) {
+                VStack(spacing: KairosTheme.Spacing.xs) {
+                    Text("TENETS")
+                        .font(KairosTheme.Typography.monoLarge)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        .tracking(6)
+                    Text("A framework for deliberate annual living.")
+                        .font(KairosTheme.Typography.body)
+                        .foregroundStyle(KairosTheme.Colors.textMuted)
+                        .multilineTextAlignment(.center)
+                }
+                // Skip straight to app — useful for users restoring from import
+                Button("Skip — I'll import my data") { onComplete() }
+                    .buttonStyle(.plain)
+                    .font(KairosTheme.Typography.caption)
                     .foregroundStyle(KairosTheme.Colors.textMuted)
-                    .multilineTextAlignment(.center)
             }
-            .padding(.bottom, KairosTheme.Spacing.xxl)
-            primaryButton("Get started") { step = 1 }
         }
     }
 

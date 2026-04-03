@@ -287,30 +287,16 @@ private func valueForm(
         ScrollView {
             VStack(alignment: .leading, spacing: KairosTheme.Spacing.lg) {
 
-                // Name + Emoji row
-                HStack(spacing: KairosTheme.Spacing.md) {
-                    VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
-                        KairosLabel(text: "Emoji")
-                        TextField("🌿", text: emoji)
-                            .textFieldStyle(.plain)
-                            .font(.title2)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 48, height: 36)
-                            .padding(KairosTheme.Spacing.xs)
-                            .background(KairosTheme.Colors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-                    }
-
-                    VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
-                        KairosLabel(text: "Name")
-                        TextField("e.g. Presence", text: name)
-                            .textFieldStyle(.plain)
-                            .font(KairosTheme.Typography.headline)
-                            .foregroundStyle(KairosTheme.Colors.textPrimary)
-                            .padding(KairosTheme.Spacing.sm)
-                            .background(KairosTheme.Colors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
-                    }
+                // Name
+                VStack(alignment: .leading, spacing: KairosTheme.Spacing.xs) {
+                    KairosLabel(text: "Name")
+                    TextField("e.g. Presence", text: name)
+                        .textFieldStyle(.plain)
+                        .font(KairosTheme.Typography.headline)
+                        .foregroundStyle(KairosTheme.Colors.textPrimary)
+                        .padding(KairosTheme.Spacing.sm)
+                        .background(KairosTheme.Colors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: KairosTheme.Radius.sm))
                 }
 
                 // Colour swatches

@@ -16,23 +16,18 @@ struct SettingsView: View {
     @State private var yearToDelete: KairosYear?
     @State private var domainToArchive: KairosDomain?
     @State private var domainToDelete: KairosDomain?
-    @State private var showResetConfirmation     = false
-    @State private var showResetSyncConfirmation = false
+    @State private var showResetConfirmation = false
     @State private var showArchiveSection = false
     @State private var notificationsAuthorized = false
     @State private var pulseNotifEnabled = true
     @State private var reviewNotifEnabled = true
 
     // Export / Import
-    @State private var exportDocument       = KairosBackupDocument()
-    @State private var showExporter         = false
-    @State private var showImporter         = false
+    @State private var exportDocument  = KairosBackupDocument()
+    @State private var showExporter    = false
+    @State private var showImporter    = false
     @State private var importAlertMsg: String?
-    @State private var showImportAlert      = false
-    // Restart-for-import
-    @State private var showRestartForImport = false
-    @State private var pendingImportData: Data?     = nil
-    @State private var pendingImportSummary: String = ""
+    @State private var showImportAlert = false
 
     var body: some View {
         ScrollView {
@@ -121,18 +116,6 @@ struct SettingsView: View {
             Text("This permanently deletes all objectives and key results in this domain. This cannot be undone.")
         }
         .confirmationDialog(
-            "Reset iCloud Sync?",
-            isPresented: $showResetSyncConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Reset & Restart", role: .destructive) {
-                KairosApp.resetSyncAndRestart()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Wipes the local iCloud store and restarts the app. Your data on iCloud is safe — it will be re-downloaded automatically. Use this when sync is stuck after importing on another device.")
-        }
-        .confirmationDialog(
             "Reset All Data?",
             isPresented: $showResetConfirmation,
             titleVisibility: .visible
@@ -178,20 +161,6 @@ struct SettingsView: View {
         } message: {
             Text(importAlertMsg ?? "")
         }
-        // MARK: Restart-for-import confirmation
-        // Wiping the CloudKit store before import guarantees CloudKit initialises
-        // cleanly on relaunch and pushes the imported records as brand-new — no
-        // stale tombstones, no zone-token conflicts, no Code=1011.
-        .alert("Restart to Import?", isPresented: $showRestartForImport) {
-            Button("Restart & Import", role: .destructive) {
-                if let data = pendingImportData {
-                    KairosApp.scheduleImportAndRestart(data: data)
-                }
-            }
-            Button("Cancel", role: .cancel) { pendingImportData = nil }
-        } message: {
-            Text("Found \(pendingImportSummary).\n\nThe app will restart so iCloud syncs cleanly. Your existing data is unchanged until the restart completes.")
-        }
         // MARK: Year Wizard
         .sheet(isPresented: $showYearWizard) {
             YearWizardView()
@@ -230,20 +199,14 @@ struct SettingsView: View {
             return
         }
 
-        // Validate the backup before committing to a restart
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        guard let backup = try? decoder.decode(KairosBackup.self, from: data) else {
-            importAlertMsg  = "Import failed — the file may be corrupt or from an incompatible version."
+        do {
+            let result = try KairosExportManager.importBackup(from: data, into: modelContext)
+            importAlertMsg  = result.summary
             showImportAlert = true
-            return
+        } catch {
+            importAlertMsg  = error.localizedDescription
+            showImportAlert = true
         }
-
-        // Show restart confirmation; actual import happens on next launch via
-        // KairosApp.applyPendingImportIfNeeded, after a clean CloudKit init.
-        pendingImportData    = data
-        pendingImportSummary = "\(backup.years.count) year(s), \(backup.pulses.count) pulse(s), \(backup.reviews.count) review(s)"
-        showRestartForImport = true
     }
 
     // MARK: - Year Setup Section
@@ -577,21 +540,6 @@ struct SettingsView: View {
                         }
                         Spacer()
                     }
-                }
-                .buttonStyle(.plain)
-
-                KairosDivider()
-
-                // Reset sync — wipes the local CloudKit store and restarts so the
-                // device re-downloads everything from iCloud from scratch.
-                // Use on the Mac after importing on iPhone if sync is stuck.
-                Button { showResetSyncConfirmation = true } label: {
-                    HStack {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                        Text("Reset iCloud Sync")
-                    }
-                    .font(KairosTheme.Typography.body)
-                    .foregroundStyle(KairosTheme.Colors.accent)
                 }
                 .buttonStyle(.plain)
 

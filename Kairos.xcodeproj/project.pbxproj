@@ -16,7 +16,6 @@
 		40307F763177F607660F7FFA /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9115EA9AF8705CF2A7B5A38 /* ReviewView.swift */; };
 		40B7117085D5E8927C7C54BC /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */; };
 		41069C99611769952ADA5462 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CFAB63E558CD71DAF06AE7 /* DashboardView.swift */; };
-		575EEF696AAE4B24CCEEC82F /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB57BC4BCB9466EE879F4836 /* CloudKit.framework */; };
 		577C85CFAA1EC327C072856B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3357591E2906E01CB815682 /* SettingsView.swift */; };
 		611068D42F6058A48B70C549 /* SeedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05BD95988659F3B1C387E9F /* SeedData.swift */; };
 		642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A76FE310D5F8F56EA21A7B6 /* Security.framework */; };
@@ -54,7 +53,6 @@
 		B05BD95988659F3B1C387E9F /* SeedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeedData.swift; sourceTree = "<group>"; };
 		C3357591E2906E01CB815682 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C5B4E7FB71E9FC303257C156 /* KairosTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosTheme.swift; sourceTree = "<group>"; };
-		CB57BC4BCB9466EE879F4836 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		D05D38BD6EA74A634C67FA8D /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		E43372EFD253509C9CD5A7F7 /* Kairos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kairos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
@@ -70,7 +68,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				575EEF696AAE4B24CCEEC82F /* CloudKit.framework in Frameworks */,
 				642CA2DE6AB03ADF3E205DB4 /* Security.framework in Frameworks */,
 				8772C502A0692EA695B6D231 /* Speech.framework in Frameworks */,
 				40B7117085D5E8927C7C54BC /* UserNotifications.framework in Frameworks */,
@@ -91,7 +88,6 @@
 		0B8102447B1C538C296AC704 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				CB57BC4BCB9466EE879F4836 /* CloudKit.framework */,
 				4A76FE310D5F8F56EA21A7B6 /* Security.framework */,
 				D05D38BD6EA74A634C67FA8D /* Speech.framework */,
 				666F31FE8A76D62F09CC75A2 /* UserNotifications.framework */,

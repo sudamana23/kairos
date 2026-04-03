@@ -28,7 +28,6 @@ targets:
     sources:
       - path: Kairos
     dependencies:
-      - sdk: CloudKit.framework
       - sdk: Security.framework
       - sdk: Speech.framework
       - sdk: UserNotifications.framework
@@ -56,7 +55,7 @@ targets:
         CFBundleDisplayName: Tenets
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "21"
+        CFBundleVersion: "22"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
