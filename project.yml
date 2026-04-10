@@ -55,7 +55,7 @@ targets:
         CFBundleDisplayName: Tenets
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "24"
+        CFBundleVersion: "25"
         NSHighResolutionCapable: true
         ITSAppUsesNonExemptEncryption: false
         LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"

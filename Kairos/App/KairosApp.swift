@@ -1,8 +1,19 @@
 import SwiftUI
 import SwiftData
 
+// Reopens the main window when the user clicks the Dock icon after closing it.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if !hasVisibleWindows {
+            sender.windows.first?.makeKeyAndOrderFront(nil)
+        }
+        return true
+    }
+}
+
 @main
 struct KairosApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let modelContainer: ModelContainer
 
     init() {
@@ -57,6 +68,12 @@ struct KairosApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
+            CommandGroup(replacing: .windowList) {
+                Button("Tenets") {
+                    NSApplication.shared.windows.first?.makeKeyAndOrderFront(nil)
+                }
+                .keyboardShortcut("0", modifiers: [.command])
+            }
         }
     }
 }
