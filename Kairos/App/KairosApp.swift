@@ -1,9 +1,19 @@
 import SwiftUI
 import SwiftData
 
-// Reopens the main window when the user clicks the Dock icon after closing it.
+// Handles single-window macOS app lifecycle.
+// Window persists in memory when closed (not destroyed) so it can be reopened via Dock.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Prevent window destruction when closed — it will be hidden but remain in memory.
+        // This allows applicationShouldHandleReopen to restore it when Dock is clicked.
+        if let window = NSApplication.shared.windows.first {
+            window.isReleasedWhenClosed = false
+        }
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        // When user clicks Dock icon and no windows are visible, restore the hidden window.
         if !hasVisibleWindows {
             sender.windows.first?.makeKeyAndOrderFront(nil)
         }
