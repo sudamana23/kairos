@@ -57,6 +57,14 @@ struct KairosApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
+            CommandMenu("Window") {
+                Button("Tenets") {
+                    if let window = NSApplication.shared.windows.first {
+                        window.makeKeyAndOrderFront(nil)
+                    }
+                }
+                .keyboardShortcut("0", modifiers: .command)
+            }
         }
     }
 }
