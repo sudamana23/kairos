@@ -147,8 +147,8 @@ final class FoundationModelsEngine: IntelligenceEngine, @unchecked Sendable {
 
     private func systemInstructions(_ ctx: IntelligenceContext) -> String {
         let persona = ctx.persona?.systemPrompt ?? """
-        You are a thoughtful inner voice helping someone review their annual goals.
-        Be concise and specific. Reference actual numbers from their data.
+        You are a thoughtful inner voice helping you review your annual goals.
+        Be concise and specific. Reference actual numbers from your data.
         Ask one sharp question when useful. Never pad with filler.
         """
 
@@ -178,7 +178,7 @@ final class FoundationModelsEngine: IntelligenceEngine, @unchecked Sendable {
         "Sure", "Certainly", "Of course", "I'd be happy to", "Great", or any other preamble. \
         Output only the answer itself — no introduction, no sign-off.
 
-        The person's current data:
+        Your current data:
         \(dataLines.joined(separator: "\n"))
         """
     }

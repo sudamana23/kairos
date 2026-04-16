@@ -101,7 +101,7 @@ struct DashboardView: View {
         yearSummary = year.aiSummary.isEmpty ? nil : year.aiSummary   // show stale while loading
         let ctx = intelligence.buildContext(from: year, pulses: Array(pulses.prefix(4)))
         let prompt = """
-        State the single sharpest, most specific insight about this person's year so far. \
+        State the single sharpest, most specific insight about your year so far. \
         One sentence. Maximum 18 words. No preamble.
         """
         do {
