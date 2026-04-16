@@ -1,18 +1,8 @@
 import SwiftUI
 import SwiftData
 
-// Handles single-window macOS app lifecycle.
-// When the user closes the main window, the app quits.
-// This is standard macOS behavior for single-window apps (Mail, Calendar, etc.).
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationShouldTerminateWhenLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true  // Quit app when main window closes
-    }
-}
-
 @main
 struct KairosApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let modelContainer: ModelContainer
 
     init() {
@@ -53,7 +43,7 @@ struct KairosApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Tenets") {
             RootContainerView()
                 .modelContainer(modelContainer)
                 .task {
