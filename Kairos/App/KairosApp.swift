@@ -165,7 +165,6 @@ struct AppRootView: View {
         case .timeMachine:      TimeMachineView()
         case .domain(let name): DomainDetailView(domainName: name)
         case .settings:         SettingsView()
-        case .help:             HelpView()
         }
     }
 
@@ -181,7 +180,6 @@ enum KairosRoute: Hashable {
     case timeMachine
     case domain(String)
     case settings
-    case help
 }
 
 // MARK: - DomainValueDrop
@@ -334,10 +332,8 @@ struct KairosSidebar: View {
             }
             .listRowBackground(Color.clear)
 
-            // MARK: Help & Settings
+            // MARK: Settings
             Section {
-                Label("Help", systemImage: "questionmark.circle")
-                    .tag(KairosRoute.help)
                 Label("Settings", systemImage: "slider.horizontal.3")
                     .tag(KairosRoute.settings)
             }
