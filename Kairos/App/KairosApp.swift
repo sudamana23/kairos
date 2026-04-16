@@ -75,17 +75,6 @@ struct KairosApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
-            CommandGroup(replacing: .windowList) {
-                Button("Tenets") {
-                    // Activate app first, then show window
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                    // Use orderFrontRegardless for more forceful window ordering
-                    if let window = NSApplication.shared.windows.first {
-                        window.orderFrontRegardless()
-                    }
-                }
-                .keyboardShortcut("0", modifiers: .command)
-            }
         }
     }
 }

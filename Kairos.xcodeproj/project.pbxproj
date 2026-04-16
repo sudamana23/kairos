@@ -30,7 +30,6 @@
 		E3C86BB8154D6AF0C549329B /* DomainDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A802C70405445110405CB258 /* DomainDetailView.swift */; };
 		F8F823069C71F26BB2290D52 /* KairosValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28247BF8A65F33F91C44E72F /* KairosValue.swift */; };
 		FB70D6039F84DC87993D0B24 /* ValuesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00963076FD5DB5E9077657EB /* ValuesView.swift */; };
-		FC1662F0F10D5400F4873BB1 /* CloudKitSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B5D9AC9F70E9F3935883B2 /* CloudKitSyncMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,7 +55,6 @@
 		D05D38BD6EA74A634C67FA8D /* Speech.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Speech.framework; path = System/Library/Frameworks/Speech.framework; sourceTree = SDKROOT; };
 		E43372EFD253509C9CD5A7F7 /* Tenets.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tenets.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E66A0CBAC05EEACFDBFA9CB7 /* IntelligenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligenceEngine.swift; sourceTree = "<group>"; };
-		F4B5D9AC9F70E9F3935883B2 /* CloudKitSyncMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitSyncMonitor.swift; sourceTree = "<group>"; };
 		F52AEC332166DFAE5DB88F37 /* KairosExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KairosExport.swift; sourceTree = "<group>"; };
 		F5D11480CDABC38A6F47CE04 /* Kairos.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Kairos.entitlements; sourceTree = "<group>"; };
 		F9115EA9AF8705CF2A7B5A38 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
@@ -159,7 +157,6 @@
 				66B96042E8E4B63DE1B17E5E /* Intelligence */,
 				B7A9D35597033294088D0F74 /* Models */,
 				2D2AC9185C7CBE2060EE0464 /* Notifications */,
-				DEDD8701B86522657A31FC84 /* Sync */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -253,14 +250,6 @@
 			path = Data;
 			sourceTree = "<group>";
 		};
-		DEDD8701B86522657A31FC84 /* Sync */ = {
-			isa = PBXGroup;
-			children = (
-				F4B5D9AC9F70E9F3935883B2 /* CloudKitSyncMonitor.swift */,
-			);
-			path = Sync;
-			sourceTree = "<group>";
-		};
 		E2342E3899AA847EA00886C7 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -349,7 +338,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FC1662F0F10D5400F4873BB1 /* CloudKitSyncMonitor.swift in Sources */,
 				41069C99611769952ADA5462 /* DashboardView.swift in Sources */,
 				E3C86BB8154D6AF0C549329B /* DomainDetailView.swift in Sources */,
 				76F5F9D2E0AC7E233FE84F08 /* IntelligenceEngine.swift in Sources */,
