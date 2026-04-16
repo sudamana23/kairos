@@ -34,8 +34,6 @@ struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \KairosYear.year, order: .reverse) private var allYears: [KairosYear]
     private var years: [KairosYear] { allYears.filter { !$0.isArchived } }
-    // Ensures live re-render when CloudKit delivers remote deletions.
-    private var _sync: Int { CloudKitSyncMonitor.shared.remoteChangeToken }
     @Query private var allKeyResults: [KairosKeyResult]
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
 

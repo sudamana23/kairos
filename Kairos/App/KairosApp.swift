@@ -1,8 +1,20 @@
 import SwiftUI
 import SwiftData
 
+// Window delegate: hide on close instead of destroying the window.
+// This allows window reopening via menu, keyboard, or Dock.
+// Satisfies Apple Guideline 4: Design — window must be reopenable.
+final class KairosWindowDelegate: NSObject, NSWindowDelegate {
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // Hide window instead of closing it (works within sandbox)
+        sender.orderOut(nil)
+        return false  // Don't actually close
+    }
+}
+
 @main
 struct KairosApp: App {
+    private static let windowDelegate = KairosWindowDelegate()
     let modelContainer: ModelContainer
 
     init() {
@@ -46,6 +58,12 @@ struct KairosApp: App {
         WindowGroup("Tenets") {
             RootContainerView()
                 .modelContainer(modelContainer)
+                .onAppear {
+                    // Attach window delegate to hide on close, enable reopening via menu/Dock
+                    if let window = NSApplication.shared.windows.first {
+                        window.delegate = Self.windowDelegate
+                    }
+                }
                 .task {
                     let granted = await NotificationManager.shared.requestPermission()
                     if granted { await NotificationManager.shared.scheduleAll() }
@@ -57,10 +75,13 @@ struct KairosApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
-            CommandMenu("Window") {
+            CommandGroup(replacing: .windowList) {
                 Button("Tenets") {
+                    // Activate app first, then show window
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                    // Use orderFrontRegardless for more forceful window ordering
                     if let window = NSApplication.shared.windows.first {
-                        window.makeKeyAndOrderFront(nil)
+                        window.orderFrontRegardless()
                     }
                 }
                 .keyboardShortcut("0", modifiers: .command)

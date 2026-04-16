@@ -4,7 +4,6 @@ import SwiftData
 struct PulseView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \KairosWeeklyPulse.date, order: .reverse) private var pulses: [KairosWeeklyPulse]
-    private var syncMonitor: CloudKitSyncMonitor = .shared
 
     @State private var isCapturing = false
     @State private var energyLevel: Double = 5
@@ -34,8 +33,6 @@ struct PulseView: View {
             .padding(KairosTheme.Spacing.xl)
         }
         .background(KairosTheme.Colors.background)
-        // Re-render when CloudKit delivers remote changes (e.g. deletions from another device)
-        .id(syncMonitor.remoteChangeToken)
     }
 
     // MARK: - Header
