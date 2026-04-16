@@ -78,12 +78,6 @@ struct KairosApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .undoRedo) {}
-            CommandGroup(replacing: .windowList) {
-                Button("Tenets") {
-                    NSApplication.shared.windows.first?.makeKeyAndOrderFront(nil)
-                }
-                .keyboardShortcut("0", modifiers: [.command])
-            }
         }
     }
 }
@@ -171,6 +165,7 @@ struct AppRootView: View {
         case .timeMachine:      TimeMachineView()
         case .domain(let name): DomainDetailView(domainName: name)
         case .settings:         SettingsView()
+        case .help:             HelpView()
         }
     }
 
@@ -186,6 +181,7 @@ enum KairosRoute: Hashable {
     case timeMachine
     case domain(String)
     case settings
+    case help
 }
 
 // MARK: - DomainValueDrop
@@ -338,8 +334,10 @@ struct KairosSidebar: View {
             }
             .listRowBackground(Color.clear)
 
-            // MARK: Settings
+            // MARK: Help & Settings
             Section {
+                Label("Help", systemImage: "questionmark.circle")
+                    .tag(KairosRoute.help)
                 Label("Settings", systemImage: "slider.horizontal.3")
                     .tag(KairosRoute.settings)
             }
